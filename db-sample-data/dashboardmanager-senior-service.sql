@@ -8,6 +8,12 @@ WHERE index = 'senior_service_distribution';
 DELETE FROM public.component_charts
 WHERE index = 'senior_service_distribution';
 
+DELETE FROM public.component_maps
+WHERE index IN (
+    'senior_service_distribution_taipei',
+    'senior_service_distribution_metrotaipei'
+);
+
 DELETE FROM public.components
 WHERE index = 'senior_service_distribution';
 
@@ -20,6 +26,69 @@ VALUES (
     ARRAY['#24B0DD','#56B96D','#F8CF58','#F5AD4A','#E170A6','#ED6A45','#AF4137','#10294A'],
     ARRAY['DistrictChart','ColumnChart'],
     '家'
+);
+
+INSERT INTO public.component_maps (id, index, title, type, source, size, icon, paint, property)
+VALUES
+(
+    102,
+    'senior_service_distribution_taipei',
+    '銀髮族服務機構',
+    'circle',
+    'geojson',
+    'big',
+    NULL,
+    '{
+        "circle-color": ["match", ["get", "service_type"],
+            "居家服務", "#24B0DD",
+            "社區喘息服務單位", "#56B96D",
+            "社區整合型服務中心(A單位)", "#F8CF58",
+            "老人住宅(公寓)", "#F5AD4A",
+            "老人日間照顧中心", "#E170A6",
+            "#24B0DD"
+        ],
+        "circle-stroke-color": "#ffffff",
+        "circle-stroke-width": 1,
+        "circle-opacity": 0.85
+    }',
+    '[
+        {"key": "name", "name": "機構名稱"},
+        {"key": "service_type", "name": "機構類型"},
+        {"key": "district", "name": "行政區"},
+        {"key": "address", "name": "地址"},
+        {"key": "phone", "name": "電話"},
+        {"key": "approved_date", "name": "立案日期"}
+    ]'
+),
+(
+    103,
+    'senior_service_distribution_metrotaipei',
+    '銀髮族服務機構',
+    'circle',
+    'geojson',
+    'big',
+    NULL,
+    '{
+        "circle-color": ["match", ["get", "service_type"],
+            "居家服務", "#24B0DD",
+            "社區喘息服務單位", "#56B96D",
+            "社區整合型服務中心(A單位)", "#F8CF58",
+            "老人住宅(公寓)", "#F5AD4A",
+            "老人日間照顧中心", "#E170A6",
+            "#24B0DD"
+        ],
+        "circle-stroke-color": "#ffffff",
+        "circle-stroke-width": 1,
+        "circle-opacity": 0.85
+    }',
+    '[
+        {"key": "name", "name": "機構名稱"},
+        {"key": "service_type", "name": "機構類型"},
+        {"key": "district", "name": "行政區"},
+        {"key": "address", "name": "地址"},
+        {"key": "phone", "name": "電話"},
+        {"key": "approved_date", "name": "立案日期"}
+    ]'
 );
 
 INSERT INTO public.query_charts (
@@ -47,7 +116,7 @@ INSERT INTO public.query_charts (
 (
     'senior_service_distribution',
     NULL,
-    '{}',
+    '{103}',
     '{}',
     'static',
     NULL,
@@ -69,7 +138,7 @@ INSERT INTO public.query_charts (
 (
     'senior_service_distribution',
     NULL,
-    '{}',
+    '{102}',
     '{}',
     'static',
     NULL,
@@ -96,6 +165,12 @@ WHERE index = 'ltc_care_tpe';
 UPDATE public.dashboards
 SET components = '{214,215,216,218,219}'
 WHERE index = 'ltc_care_newtpe';
+
+SELECT pg_catalog.setval(
+    'public.component_maps_id_seq',
+    (SELECT COALESCE(MAX(id), 0) FROM public.component_maps),
+    true
+);
 
 SELECT pg_catalog.setval(
     'public.components_id_seq',
