@@ -18,7 +18,7 @@ INSERT INTO public.component_charts (index, color, types, unit)
 VALUES (
     'senior_service_distribution',
     ARRAY['#24B0DD','#56B96D','#F8CF58','#F5AD4A','#E170A6','#ED6A45','#AF4137','#10294A'],
-    ARRAY['DistrictChart','BarChart'],
+    ARRAY['DistrictChart','ColumnChart'],
     '家'
 );
 
