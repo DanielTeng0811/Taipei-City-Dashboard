@@ -78,3 +78,4 @@ Taipei-City-Dashboard-DE/docker/prod/.env
 Taipei-City-Dashboard-Documentation/
 /*.csv
 Taipei-City-Dashboard-DE/dags/test/
+Taipei-City-Dashboard-FE/src/assets/configs/mapbox/mapConfig.js
