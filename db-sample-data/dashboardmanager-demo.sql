@@ -156,7 +156,7 @@ SELECT pg_catalog.setval('public.groups_id_seq', (SELECT COALESCE(MAX(id), 4) FR
 --
 
 \i /opt/db-sample-data/dashboardmanager-senior-service.sql
-
+\i /opt/db-sample-data/dashboardmanager-medical-garbage.sql
 
 -- Completed on 2024-02-16 10:38:44 UTC
 
