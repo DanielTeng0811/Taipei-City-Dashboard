@@ -151,6 +151,13 @@ SELECT pg_catalog.setval('public.dashboards_id_seq', (SELECT COALESCE(MAX(id), 0
 SELECT pg_catalog.setval('public.groups_id_seq', (SELECT COALESCE(MAX(id), 4) FROM public.groups), true);
 
 
+--
+-- Name: dashboardmanager-senior-service.sql; Type: SCRIPT INCLUDE; Schema: -; Owner: -
+--
+
+\i /opt/db-sample-data/dashboardmanager-senior-service.sql
+
+
 -- Completed on 2024-02-16 10:38:44 UTC
 
 --

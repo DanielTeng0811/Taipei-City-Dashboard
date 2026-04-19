@@ -11,7 +11,7 @@ Path("./lm_model").mkdir(parents=True, exist_ok=True)
 MODEL_ID = "intfloat/multilingual-e5-base"
 OUT_DIR  = "./lm_model/onnx-e5"   # 匯出資料夾
 
-# 1) 匯出成 ONNX（FeatureExtraction 會輸出 last_hidden_state）
+# 1) 匯出成 ONNX（FeatureExtraction 會輸出 last_hidden_state Test
 model = ORTModelForFeatureExtraction.from_pretrained(
     MODEL_ID,
     # export=True,                     # 叫它幫你匯出 ONNX
