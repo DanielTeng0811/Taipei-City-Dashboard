@@ -155,8 +155,8 @@ SELECT pg_catalog.setval('public.groups_id_seq', (SELECT COALESCE(MAX(id), 4) FR
 -- Name: dashboardmanager-senior-service.sql; Type: SCRIPT INCLUDE; Schema: -; Owner: -
 --
 
+\i /opt/db-sample-data/dashboardmanager-eco-zones.sql
 \i /opt/db-sample-data/dashboardmanager-senior-service.sql
-\i /opt/db-sample-data/dashboardmanager-traffic-accident.sql
 \i /opt/db-sample-data/dashboardmanager-eco-restaurant.sql
 \i /opt/db-sample-data/dashboardmanager-medical-garbage.sql
 
