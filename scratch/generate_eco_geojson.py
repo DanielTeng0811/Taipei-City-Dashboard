@@ -1,3 +1,7 @@
+# source: dataset-analysis/eco-friendly/*.csv
+# target: ../Taipei-City-Dashboard-FE/public/mapData/eco_living_15min_metrotaipei.geojson
+# target: ../Taipei-City-Dashboard-FE/public/mapData/eco_living_15min_taipei.geojson
+
 import os
 import csv
 import re

@@ -1,3 +1,5 @@
+# target: db-sample-data/dashboard-eco-zones.sql
+
 import os
 import csv
 import re

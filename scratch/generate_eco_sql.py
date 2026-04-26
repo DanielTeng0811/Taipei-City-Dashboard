@@ -1,3 +1,6 @@
+# source: dataset-analysis/eco-friendly/*.csv
+# target: db-sample-data/dashboard-eco-15min.sql
+# target: db-sample-data/dashboardmanager-eco-15min.sql
 import os
 import csv
 import re

@@ -1,3 +1,10 @@
+# target: ../Taipei-City-Dashboard-FE/public/mapData/eco_zone_2/metrotaipei.geojson
+# target: ../Taipei-City-Dashboard-FE/public/mapData/eco_zone_3/metrotaipei.geojson
+# target: ../Taipei-City-Dashboard-FE/public/mapData/eco_zone_4/metrotaipei.geojson
+# target: ../Taipei-City-Dashboard-FE/public/mapData/eco_zone_2/taipei.geojson
+# target: ../Taipei-City-Dashboard-FE/public/mapData/eco_zone_3/taipei.geojson
+# target: ../Taipei-City-Dashboard-FE/public/mapData/eco_zone_4/taipei.geojson
+
 import os
 import csv
 import re
