@@ -34,7 +34,7 @@ VALUES (
     'geojson',
     NULL,
     NULL,
-    '{"circle-radius":["interpolate",["linear"],["to-number",["get","action_count"]],1,4,2,6,3,8,4,10],"circle-color":["match",["get","primary_action"],"環境管理","#36C2A0","惜食(善用食材)","#F8CF58","源頭減量","#5CA8D8","綠色採購","#9AC17C","環境教育","#E170A6","#36C2A0"],"circle-stroke-color":"#ffffff","circle-stroke-width":1.3,"circle-opacity":0.88}',
+    '{"circle-radius":["interpolate",["linear"],["to-number",["get","action_count"],1],1,4,2,6,3,8,4,10],"circle-color":["match",["get","primary_action"],"環境管理","#36C2A0","惜食(善用食材)","#F8CF58","源頭減量","#5CA8D8","綠色採購","#9AC17C","環境教育","#E170A6","#36C2A0"],"circle-stroke-color":"#ffffff","circle-stroke-width":1.3,"circle-opacity":0.88}',
     '[
         {"key":"name","name":"餐廳名稱"},
         {"key":"district","name":"行政區"},
@@ -85,7 +85,7 @@ INSERT INTO public.query_charts (
     '2026-04-25 00:00:00+00',
     '2026-04-25 00:00:00+00',
     'three_d',
-    'SELECT district AS x_axis, ''環保餐廳'' AS y_axis, COUNT(*)::int AS data FROM public.taipei_eco_restaurants WHERE district IS NOT NULL AND length(district) > 0 GROUP BY district ORDER BY district',
+    'SELECT district AS x_axis, ''環保餐廳'' AS y_axis, COUNT(*)::int AS data FROM public.taipei_eco_restaurants WHERE district IS NOT NULL AND btrim(district) <> '''' AND lower(btrim(district)) <> ''nan'' GROUP BY district ORDER BY district',
     NULL,
     'taipei'
 ),
@@ -107,7 +107,7 @@ INSERT INTO public.query_charts (
     '2026-04-25 00:00:00+00',
     '2026-04-25 00:00:00+00',
     'three_d',
-    'SELECT district AS x_axis, ''環保餐廳'' AS y_axis, COUNT(*)::int AS data FROM public.taipei_eco_restaurants WHERE district IS NOT NULL AND length(district) > 0 GROUP BY district ORDER BY district',
+    'SELECT district AS x_axis, ''環保餐廳'' AS y_axis, COUNT(*)::int AS data FROM public.taipei_eco_restaurants WHERE district IS NOT NULL AND btrim(district) <> '''' AND lower(btrim(district)) <> ''nan'' GROUP BY district ORDER BY district',
     NULL,
     'metrotaipei'
 );

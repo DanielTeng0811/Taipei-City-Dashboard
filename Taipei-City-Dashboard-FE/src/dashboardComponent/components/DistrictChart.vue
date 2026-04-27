@@ -133,12 +133,19 @@ const districtData = computed(() => {
 	let highest = 0;
 	let sum = 0;
 	if (props.series.length === 1) {
-		props.series[0].data.forEach((item) => {
-			output[item.x] = item.y;
-			if (item.y > highest) {
-				highest = item.y;
+		props.series[0].data.forEach((item, index) => {
+			const district = item?.x ?? props.chart_config.categories?.[index];
+			const value = Number(item?.y ?? item ?? 0);
+
+			if (!district || !Number.isFinite(value)) {
+				return;
 			}
-			sum += item.y;
+
+			output[district] = value;
+			if (value > highest) {
+				highest = value;
+			}
+			sum += value;
 		});
 	} else {
 		props.series.forEach((serie) => {
