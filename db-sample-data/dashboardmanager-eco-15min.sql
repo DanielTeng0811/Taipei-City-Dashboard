@@ -45,12 +45,12 @@ INSERT INTO public.query_charts (
 ) VALUES
 (
     'eco_living_15min', NULL, '{150}', '{}', 'static', NULL, 0, '', '環保局資料', '顯示臺北市無痕生活圈分布', '包含綠色商店、環保餐廳、資源回收與充電站。', '鼓勵市民參與15分鐘無痕生活。', ARRAY['#'], ARRAY['doit'], '2024-01-01 00:00:00+00', '2024-01-01 00:00:00+00', 'three_d',
-    'SELECT district AS x_axis, category AS y_axis, COUNT(*)::int AS data FROM public.eco_living_15min WHERE city = ''臺北市'' AND district IS NOT NULL AND length(district) > 0 GROUP BY district, category ORDER BY district',
+    'WITH districts AS (SELECT DISTINCT district FROM public.eco_living_15min WHERE city = ''臺北市'' AND district IS NOT NULL AND btrim(district) <> '''' AND lower(btrim(district)) <> ''nan''), categories AS (SELECT unnest(ARRAY[''充電站'', ''環保餐廳'', ''綠色商店'', ''資源回收'']) AS category) SELECT d.district AS x_axis, c.category AS y_axis, COALESCE(COUNT(e.id), 0)::int AS data FROM districts d CROSS JOIN categories c LEFT JOIN public.eco_living_15min e ON e.city = ''臺北市'' AND e.district = d.district AND e.category = c.category GROUP BY d.district, c.category ORDER BY d.district, c.category',
     NULL, 'taipei'
 ),
 (
     'eco_living_15min', NULL, '{151}', '{}', 'static', NULL, 0, '', '雙北環保局資料', '顯示雙北無痕生活圈分布', '包含綠色商店、環保餐廳、資源回收與充電站。', '鼓勵市民參與跨域15分鐘無痕生活。', ARRAY['#'], ARRAY['doit', 'ntpc'], '2024-01-01 00:00:00+00', '2024-01-01 00:00:00+00', 'three_d',
-    'SELECT district AS x_axis, category AS y_axis, COUNT(*)::int AS data FROM public.eco_living_15min WHERE district IS NOT NULL AND length(district) > 0 GROUP BY district, category ORDER BY district',
+    'WITH districts AS (SELECT DISTINCT district FROM public.eco_living_15min WHERE district IS NOT NULL AND btrim(district) <> '''' AND lower(btrim(district)) <> ''nan''), categories AS (SELECT unnest(ARRAY[''充電站'', ''環保餐廳'', ''綠色商店'', ''資源回收'']) AS category) SELECT d.district AS x_axis, c.category AS y_axis, COALESCE(COUNT(e.id), 0)::int AS data FROM districts d CROSS JOIN categories c LEFT JOIN public.eco_living_15min e ON e.district = d.district AND e.category = c.category GROUP BY d.district, c.category ORDER BY d.district, c.category',
     NULL, 'metrotaipei'
 );
 
