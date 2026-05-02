@@ -304,6 +304,8 @@ ON CONFLICT DO NOTHING;
 
 COMMIT;
 
+\i /opt/db-sample-data/dashboardmanager-waste.sql
+
 -- Completed on 2024-02-16 10:38:44 UTC
 
 --

@@ -7,6 +7,7 @@
 --   dashboardmanager-eco-restaurant.sql     (eco_restaurant_taipei=223)
 --   dashboardmanager-clothing-recycle-bins.sql
 --   dashboardmanager-garbage-truck.sql      (garbage_truck)
+--   dashboardmanager-waste.sql              (waste_statistics)
 --
 
 BEGIN;
@@ -65,6 +66,18 @@ BEGIN
     END IF;
 END $$;
 
+-- 一般廢棄物清理情況 (waste_statistics, id auto-assigned)
+DO $$
+DECLARE v_id integer;
+BEGIN
+    SELECT id INTO v_id FROM public.components WHERE "index" = 'waste_statistics';
+    IF v_id IS NOT NULL THEN
+        UPDATE public.dashboards
+        SET components = array_append(components, v_id)
+        WHERE "index" = 'sustainable_env_tpe' AND NOT (v_id = ANY(components));
+    END IF;
+END $$;
+
 -- ─── 雙北 Dashboard Components ───────────────────────────────────────────────
 
 -- 第一區：溫室氣體與隱形碳排 (eco_zone1, id=320)
@@ -102,6 +115,18 @@ DO $$
 DECLARE v_id integer;
 BEGIN
     SELECT id INTO v_id FROM public.components WHERE "index" = 'clothing_recycle_bins';
+    IF v_id IS NOT NULL THEN
+        UPDATE public.dashboards
+        SET components = array_append(components, v_id)
+        WHERE "index" = 'sustainable_env_newtpe' AND NOT (v_id = ANY(components));
+    END IF;
+END $$;
+
+-- 一般廢棄物清理情況 (waste_statistics, id auto-assigned)
+DO $$
+DECLARE v_id integer;
+BEGIN
+    SELECT id INTO v_id FROM public.components WHERE "index" = 'waste_statistics';
     IF v_id IS NOT NULL THEN
         UPDATE public.dashboards
         SET components = array_append(components, v_id)
