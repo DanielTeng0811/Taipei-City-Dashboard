@@ -15905,7 +15905,6 @@ CREATE TRIGGER tran_ubike_realtime_new_tpe_mtime BEFORE INSERT OR UPDATE ON publ
 -- Name: dashboard-senior-service.sql; Type: SCRIPT INCLUDE; Schema: -; Owner: -
 --
 
-\i /opt/db-sample-data/dashboard-eco-zones.sql
 \i /opt/db-sample-data/dashboard-resource-recycling.sql
 \i /opt/db-sample-data/dashboard-senior-service.sql
 \i /opt/db-sample-data/dashboard-eco-restaurant.sql

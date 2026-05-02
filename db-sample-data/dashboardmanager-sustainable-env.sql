@@ -3,7 +3,6 @@
 --
 -- Depends on (run first):
 --   dashboardmanager-demo.sql
---   dashboardmanager-eco-zones.sql          (eco_zone1=320, eco_zone2=330, eco_zone3=340, eco_zone4=350)
 --   dashboardmanager-eco-restaurant.sql     (eco_restaurant_taipei=223)
 --   dashboardmanager-clothing-recycle-bins.sql
 --   dashboardmanager-garbage-truck.sql      (garbage_truck)
@@ -25,30 +24,10 @@ WHERE NOT EXISTS (SELECT 1 FROM public.dashboards WHERE "index" = 'sustainable_e
 
 -- ─── 臺北市 Dashboard Components ─────────────────────────────────────────────
 
--- 第一區：溫室氣體與隱形碳排 (eco_zone1, id=320)
-UPDATE public.dashboards
-SET components = array_append(components, 320)
-WHERE "index" = 'sustainable_env_tpe' AND NOT (320 = ANY(components));
-
--- 第二區：民生垃圾與資源回收 (eco_zone2, id=330)
-UPDATE public.dashboards
-SET components = array_append(components, 330)
-WHERE "index" = 'sustainable_env_tpe' AND NOT (330 = ANY(components));
-
 -- 各縣市人均資源回收量 (resource_recycling_per_capita, id=370)
 UPDATE public.dashboards
 SET components = array_append(components, 370)
 WHERE "index" = 'sustainable_env_tpe' AND NOT (370 = ANY(components));
-
--- 第三區：綠色消費與餐飲地圖 (eco_zone3, id=340)
-UPDATE public.dashboards
-SET components = array_append(components, 340)
-WHERE "index" = 'sustainable_env_tpe' AND NOT (340 = ANY(components));
-
--- 第四區：低碳通勤充電站地圖 (eco_zone4, id=350)
-UPDATE public.dashboards
-SET components = array_append(components, 350)
-WHERE "index" = 'sustainable_env_tpe' AND NOT (350 = ANY(components));
 
 -- 空氣品質總覽 (air_quality_overview, id=360)
 UPDATE public.dashboards
@@ -86,30 +65,10 @@ END $$;
 
 -- ─── 雙北 Dashboard Components ───────────────────────────────────────────────
 
--- 第一區：溫室氣體與隱形碳排 (eco_zone1, id=320)
-UPDATE public.dashboards
-SET components = array_append(components, 320)
-WHERE "index" = 'sustainable_env_newtpe' AND NOT (320 = ANY(components));
-
--- 第二區：民生垃圾與資源回收 (eco_zone2, id=330)
-UPDATE public.dashboards
-SET components = array_append(components, 330)
-WHERE "index" = 'sustainable_env_newtpe' AND NOT (330 = ANY(components));
-
 -- 各縣市人均資源回收量 (resource_recycling_per_capita, id=370)
 UPDATE public.dashboards
 SET components = array_append(components, 370)
 WHERE "index" = 'sustainable_env_newtpe' AND NOT (370 = ANY(components));
-
--- 第三區：綠色消費與餐飲地圖 (eco_zone3, id=340)
-UPDATE public.dashboards
-SET components = array_append(components, 340)
-WHERE "index" = 'sustainable_env_newtpe' AND NOT (340 = ANY(components));
-
--- 第四區：低碳通勤充電站地圖 (eco_zone4, id=350)
-UPDATE public.dashboards
-SET components = array_append(components, 350)
-WHERE "index" = 'sustainable_env_newtpe' AND NOT (350 = ANY(components));
 
 -- 空氣品質總覽 (air_quality_overview, id=360)
 UPDATE public.dashboards
