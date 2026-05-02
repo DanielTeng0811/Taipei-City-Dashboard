@@ -29,7 +29,6 @@ import IconPercentChart from "./components/IconPercentChart.vue";
 import IndicatorChart from "./components/IndicatorChart.vue";
 import TextUnitChart from "./components/TextUnitChart.vue";
 import CameraMonitorChart from "./components/CameraMonitorChart.vue";
-import BeachCleanupEventsChart from "./components/BeachCleanupEventsChart.vue";
 import RankingOverviewChart from "./components/RankingOverviewChart.vue";
 
 import MapLegendSvg from "./assets/chart/MapLegend.svg";
