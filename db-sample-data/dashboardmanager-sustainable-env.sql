@@ -7,6 +7,7 @@
 --   dashboardmanager-eco-restaurant.sql     (eco_restaurant_taipei=223)
 --   dashboardmanager-clothing-recycle-bins.sql
 --   dashboardmanager-garbage-truck.sql      (garbage_truck)
+--   dashboardmanager-waste.sql              (waste_statistics)
 --
 
 BEGIN;
@@ -48,7 +49,7 @@ UPDATE public.dashboards
 SET components = array_append(components, 360)
 WHERE "index" = 'sustainable_env_tpe' AND NOT (360 = ANY(components));
 
--- 臺北市環保餐廳分布 (eco_restaurant_taipei, id=223)
+-- 環保餐廳分布 (eco_restaurant_taipei, id=223)
 UPDATE public.dashboards
 SET components = array_append(components, 223)
 WHERE "index" = 'sustainable_env_tpe' AND NOT (223 = ANY(components));
@@ -58,6 +59,18 @@ DO $$
 DECLARE v_id integer;
 BEGIN
     SELECT id INTO v_id FROM public.components WHERE "index" = 'garbage_truck';
+    IF v_id IS NOT NULL THEN
+        UPDATE public.dashboards
+        SET components = array_append(components, v_id)
+        WHERE "index" = 'sustainable_env_tpe' AND NOT (v_id = ANY(components));
+    END IF;
+END $$;
+
+-- 一般廢棄物清理情況 (waste_statistics, id auto-assigned)
+DO $$
+DECLARE v_id integer;
+BEGIN
+    SELECT id INTO v_id FROM public.components WHERE "index" = 'waste_statistics';
     IF v_id IS NOT NULL THEN
         UPDATE public.dashboards
         SET components = array_append(components, v_id)
@@ -87,17 +100,12 @@ UPDATE public.dashboards
 SET components = array_append(components, 350)
 WHERE "index" = 'sustainable_env_newtpe' AND NOT (350 = ANY(components));
 
--- 15分鐘無痕生活圈 (eco_living_15min, id=310)
-UPDATE public.dashboards
-SET components = array_append(components, 310)
-WHERE "index" = 'sustainable_env_newtpe' AND NOT (310 = ANY(components));
-
 -- 空氣品質總覽 (air_quality_overview, id=360)
 UPDATE public.dashboards
 SET components = array_append(components, 360)
 WHERE "index" = 'sustainable_env_newtpe' AND NOT (360 = ANY(components));
 
--- 臺北市環保餐廳分布 (eco_restaurant_taipei, id=223)
+-- 環保餐廳分布 (eco_restaurant_taipei, id=223)
 UPDATE public.dashboards
 SET components = array_append(components, 223)
 WHERE "index" = 'sustainable_env_newtpe' AND NOT (223 = ANY(components));
@@ -107,6 +115,18 @@ DO $$
 DECLARE v_id integer;
 BEGIN
     SELECT id INTO v_id FROM public.components WHERE "index" = 'clothing_recycle_bins';
+    IF v_id IS NOT NULL THEN
+        UPDATE public.dashboards
+        SET components = array_append(components, v_id)
+        WHERE "index" = 'sustainable_env_newtpe' AND NOT (v_id = ANY(components));
+    END IF;
+END $$;
+
+-- 一般廢棄物清理情況 (waste_statistics, id auto-assigned)
+DO $$
+DECLARE v_id integer;
+BEGIN
+    SELECT id INTO v_id FROM public.components WHERE "index" = 'waste_statistics';
     IF v_id IS NOT NULL THEN
         UPDATE public.dashboards
         SET components = array_append(components, v_id)
