@@ -6,8 +6,7 @@
 --   dashboardmanager-eco-zones.sql          (eco_zone1=320, eco_zone2=330, eco_zone3=340, eco_zone4=350)
 --   dashboardmanager-eco-restaurant.sql     (eco_restaurant_taipei=223)
 --   dashboardmanager-clothing-recycle-bins.sql
---   dashboardmanager-medical-garbage.sql    (garbage_truck)
---   dashboardmanager-beach-cleanup-events.sql
+--   dashboardmanager-garbage-truck.sql      (garbage_truck)
 --
 
 BEGIN;
