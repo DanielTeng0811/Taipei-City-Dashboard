@@ -180,6 +180,7 @@ VALUES (
 );
 ```
 
+
 接著新增 `query_charts`。如果要支援臺北市和雙北，要新增兩筆：
 
 ```sql
@@ -362,3 +363,107 @@ map_config_ids = '{103}'
 ```
 
 不要寫 Windows 本機路徑。
+
+
+### 9. RankingOverviewChart 資料型態
+
+`RankingOverviewChart` 是通用的排名總覽元件，不應在 Vue 內寫死特定領域的分級文字、排序方向或摘要標籤。元件讀取 `three_d` 查詢結果，並用 `component_charts.levels` 與 `component_charts.ranking_config` 控制呈現。
+
+`query_type` 使用 `three_d`，查詢至少回傳：
+
+```sql
+SELECT
+    district AS x_axis,      -- 排名項目，例如行政區、站點、類別
+    'AQI' AS y_axis,         -- 指標名稱
+    '' AS icon,              -- 保留欄位；此元件不使用 icon
+    ROUND(score)::int AS data -- 數值，若要使用 levels，建議正規化成同一量尺
+FROM public.environment_pressure_index;
+```
+
+欄位規則：
+
+- `x_axis`：列表項目名稱，會出現在排名列與點選後的主卡。
+- `y_axis`：指標名稱，預設會組成 `{指標} 排名`。
+- `icon`：保留欄位，目前可給空字串。
+- `data`：數值。元件會依 `ranking_config.order` 排序。
+
+若需要分級顏色與標籤，在 `component_charts` 加上 `levels` JSON；沒有 `levels` 時，元件會退回一般單色排名。若需要調整排序、主卡計算方式與文字，使用 `ranking_config`。
+
+```sql
+ALTER TABLE public.component_charts
+    ADD COLUMN IF NOT EXISTS levels json;
+
+ALTER TABLE public.component_charts
+    ADD COLUMN IF NOT EXISTS ranking_config json;
+
+INSERT INTO public.component_charts (index, color, types, unit, levels, ranking_config)
+VALUES (
+    'air_quality_overview',
+    ARRAY['#56B96D', '#F8CF58', '#F5AD4A', '#F05D5E', '#8E63CE', '#8B6A43'],
+    ARRAY['RankingOverviewChart'],
+    'AQI',
+    '[
+        {"label":"良好","fullLabel":"良好","min":0,"max":50},
+        {"label":"普通","fullLabel":"普通","min":51,"max":100},
+        {"label":"敏感族群","fullLabel":"對敏感族群不健康","min":101,"max":150},
+        {"label":"所有族群","fullLabel":"對所有族群不健康","min":151,"max":200},
+        {"label":"非常不健康","fullLabel":"非常不健康","min":201,"max":300},
+        {"label":"危害","fullLabel":"危害","min":301,"max":500}
+    ]'::json,
+    '{
+        "order": "desc",
+        "primary_metric": "average",
+        "value_precision": 0,
+        "labels": {
+            "primary": "平均 AQI",
+            "leading": "最高",
+            "average": "平均",
+            "count": "筆數",
+            "countUnit": "項",
+            "rank": "排名",
+            "diff": "平均差",
+            "listTitle": "AQI 排名"
+        }
+    }'::json
+);
+```
+
+`ranking_config` 可用欄位：
+
+- `order`：`desc` 或 `asc`，預設 `desc`。
+- `primary_metric`：主卡未選取項目時顯示 `average`、`sum` 或 `leading`，預設 `average`。
+- `value_precision`：小數位數，預設 `0`。
+- `labels.primary`：主卡標題，例如 `平均 AQI`、`總服務量`。
+- `labels.leading`：第一名摘要標籤，例如 `最高`、`最低`、`最便利`。
+- `labels.average`、`labels.count`、`labels.countUnit`、`labels.rank`、`labels.diff`、`labels.listTitle`：控制元件內固定文案。
+
+### 10. 本機更新空氣品質資料
+
+`query_charts.update_freq` 只控制前端顯示「每多久更新」，不會自己排程抓資料。本機開發時可先用下列腳本更新 MOENV 空氣品質資料：
+
+```bash
+MOENV_API_KEY=你的環境部APIKEY \
+  python3 dataset-analysis/scripts/update_air_quality_local.py
+```
+
+若本機 Python 憑證驗證失敗，可在開發環境加上 `--no-verify-ssl`：
+
+```bash
+MOENV_API_KEY=你的環境部APIKEY \
+  python3 dataset-analysis/scripts/update_air_quality_local.py --no-verify-ssl
+```
+
+這支腳本會依序：
+
+- 呼叫 `build_moenv_air_quality_csv.py` 抓取 `AQX_P_432` 並篩出雙北。
+- 呼叫 `build_air_quality_assets.py` 產生正規化 CSV、地圖 GeoJSON 與 `dashboard-air-quality.sql`。
+- 將 `dashboard-air-quality.sql` 匯入 Docker 的 `postgres-data` container，預設 DB 為 `dashboard`。
+
+若要用已下載的原始 JSON 測試，不打 API：
+
+```bash
+python3 dataset-analysis/scripts/update_air_quality_local.py \
+  --input-json dataset-analysis/eco-friendly/雙北空氣品質原始API資料.json
+```
+
+正式部署時，不建議由後端 API 直接呼叫 MOENV。應將同一套資料流程搬到 `Taipei-City-Dashboard-DE`，建立每小時執行的 Airflow DAG，讓 DAG 更新資料庫與地圖資料來源。
