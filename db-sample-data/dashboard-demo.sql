@@ -15908,6 +15908,7 @@ CREATE TRIGGER tran_ubike_realtime_new_tpe_mtime BEFORE INSERT OR UPDATE ON publ
 \i /opt/db-sample-data/dashboard-eco-zones.sql
 \i /opt/db-sample-data/dashboard-senior-service.sql
 \i /opt/db-sample-data/dashboard-eco-restaurant.sql
+\i /opt/db-sample-data/dashboard-newtaipei-eco-restaurant.sql
 \i /opt/db-sample-data/dashboard-garbage-truck.sql
 \i /opt/db-sample-data/dashboard-clothing-recycle-bins.sql
 \i /opt/db-sample-data/dashboard-air-quality.sql
