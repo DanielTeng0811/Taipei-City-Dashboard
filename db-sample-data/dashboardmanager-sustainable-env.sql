@@ -80,7 +80,8 @@ BEGIN
             'waste_statistics',
             'food_carbon_ranking',
             'green_store_distribution',
-            'resource_recycling_tw'
+            'resource_recycling_tw',
+			'taipei_ev_charging'
         ]
         LOOP
             SELECT id::integer INTO v_component_id
