@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 
 const props = defineProps({
 	times: { type: Array, default: () => [] },
@@ -9,31 +9,79 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue"]);
 
-const currentIndex = computed(() => props.times.indexOf(props.modelValue));
-const normalizedIndex = computed(() => currentIndex.value >= 0 ? currentIndex.value : 0);
 const total = computed(() => props.times.length);
 const periodLabel = computed(() => props.granularity === "year" ? "年度" : "月份");
+
+// ── Local slider state ─────────────────────────────────────────────────────────
+// Slider pos: 0 = leftmost (oldest), total-1 = rightmost (newest).
+// times[0] is the most recent, so pos = total - 1 - timesIndex.
+const isDragging = ref(false);
+const localPos = ref(0);
+
+function posFromModelValue(mv) {
+	const idx = props.times.indexOf(mv);
+	const safeIdx = idx >= 0 ? idx : 0;
+	return Math.max(0, total.value - 1 - safeIdx);
+}
+
+// Sync from parent only when the user is NOT actively dragging.
+watch(
+	[() => props.modelValue, total],
+	() => {
+		if (!isDragging.value) {
+			localPos.value = posFromModelValue(props.modelValue);
+		}
+	},
+	{ immediate: true },
+);
+
+// Label shown while dragging reflects local position immediately.
+const currentLabel = computed(() => {
+	const idx = Math.max(0, Math.min(total.value - 1, total.value - 1 - localPos.value));
+	return props.times[idx] || props.modelValue || "";
+});
+
 const progressPercent = computed(() => {
 	if (total.value <= 1) return "100%";
-	return `${(sliderValue.value / (total.value - 1)) * 100}%`;
+	return `${(localPos.value / (total.value - 1)) * 100}%`;
 });
 
-const sliderValue = computed({
-	get: () => total.value - 1 - normalizedIndex.value,
-	set: (val) => {
-		const index = Math.max(0, Math.min(total.value - 1, total.value - 1 - val));
-		emit("update:modelValue", props.times[index]);
-	},
-});
+// ── Event handlers ─────────────────────────────────────────────────────────────
+function emitFromPos(pos) {
+	const idx = Math.max(0, Math.min(total.value - 1, total.value - 1 - pos));
+	emit("update:modelValue", props.times[idx]);
+}
+
+function onDragStart() {
+	isDragging.value = true;
+}
+
+function onInput(event) {
+	const pos = Number(event.target.value);
+	localPos.value = pos;
+	emitFromPos(pos);
+}
+
+function onDragEnd(event) {
+	const pos = Number(event.target.value);
+	localPos.value = pos;
+	emitFromPos(pos);
+	// Release lock after a tick so the parent update doesn't clobber localPos.
+	setTimeout(() => { isDragging.value = false; }, 0);
+}
 
 function prev() {
-	if (normalizedIndex.value < total.value - 1) {
-		emit("update:modelValue", props.times[normalizedIndex.value + 1]);
+	// Move left → older period
+	if (localPos.value > 0) {
+		localPos.value--;
+		emitFromPos(localPos.value);
 	}
 }
 function next() {
-	if (normalizedIndex.value > 0) {
-		emit("update:modelValue", props.times[normalizedIndex.value - 1]);
+	// Move right → newer period
+	if (localPos.value < total.value - 1) {
+		localPos.value++;
+		emitFromPos(localPos.value);
 	}
 }
 </script>
@@ -42,7 +90,7 @@ function next() {
   <div class="timeline-control">
     <button
       class="timeline-control-btn"
-      :disabled="normalizedIndex >= total - 1"
+      :disabled="localPos <= 0"
       title="上一期"
       @click="prev"
     >
@@ -52,25 +100,30 @@ function next() {
     <label class="timeline-control-main">
       <span class="timeline-label">
         <span>{{ periodLabel }}</span>
-        <strong>{{ modelValue }}</strong>
+        <strong>{{ currentLabel }}</strong>
       </span>
 
       <input
-        v-model.number="sliderValue"
+        :value="localPos"
         type="range"
         min="0"
         :max="total - 1"
         class="timeline-slider"
         :style="{ '--timeline-progress': progressPercent }"
-        :title="modelValue"
+        :title="currentLabel"
         :disabled="total <= 1"
         aria-label="選擇時間"
+        @mousedown="onDragStart"
+        @touchstart="onDragStart"
+        @input="onInput"
+        @mouseup="onDragEnd"
+        @touchend="onDragEnd"
       >
     </label>
 
     <button
       class="timeline-control-btn"
-      :disabled="normalizedIndex <= 0"
+      :disabled="localPos >= total - 1"
       title="下一期"
       @click="next"
     >
