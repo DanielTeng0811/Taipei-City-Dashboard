@@ -84,6 +84,8 @@ export const useMapStore = defineStore("map", {
 		tempMarkerCoordinates: null,
 		searchCircleMarker: null,
 		isSearchCircleClickMode: false,
+		isSearchCircleActive: false,
+		searchCircleCenter: null,
 		searchCircleRadiusKm: 1.2,
 		searchCircleLayerIds: [],
 		// Store the user's current location,
@@ -100,6 +102,10 @@ export const useMapStore = defineStore("map", {
 			// [layerId]: Date
 		},
 	}),
+	getters: {
+		isSearchCircleEnabled: (state) =>
+			state.isSearchCircleClickMode || state.isSearchCircleActive,
+	},
 	actions: {
 		/* Initialize Mapbox */
 		// 1. Creates the mapbox instance and passes in initial configs
@@ -115,6 +121,7 @@ export const useMapStore = defineStore("map", {
 			});
 			this.marker = new mapboxGl.Marker();
 			this.isSearchCircleClickMode = false;
+			this.isSearchCircleActive = false;
 			const geoLocate = new mapboxGl.GeolocateControl({
 				positionOptions: {
 					enableHighAccuracy: true,
@@ -145,6 +152,14 @@ export const useMapStore = defineStore("map", {
 							this.searchCircleRadiusKm,
 						);
 						return;
+					}
+					if (this.isSearchCircleActive) {
+						if (!this.isPointInsideSearchCircle(event.lngLat.lng, event.lngLat.lat)) {
+							this.clearSearchCircle();
+							this.removePopup();
+							this.isSearchCircleClickMode = true;
+							return;
+						}
 					}
 					if (this.popup) {
 						this.popup = null;
@@ -437,6 +452,7 @@ export const useMapStore = defineStore("map", {
 		/* Adding Map Layers */
 		// 1. Passes in the map_config (an Array of Objects) of a component and adds all layers to the map layer list
 		addToMapLayerList(map_config) {
+			this.resetSearchCircle();
 			map_config.forEach((element) => {
 				let mapLayerId = `${element.index}-${element.type}-${element.city}`;
 				// 1-1. If the layer exists, simply turn on the visibility and add it to the visible layers list
@@ -1860,6 +1876,7 @@ export const useMapStore = defineStore("map", {
 		},
 		// 6. Turn off the visibility of an exisiting map layer but don't remove it completely
 		turnOffMapLayerVisibility(map_config) {
+			this.resetSearchCircle();
 			this.stopAnimation();
 			map_config.forEach((element) => {
 				let mapLayerId = `${element.index}-${element.type}-${element.city}`;
@@ -2333,6 +2350,7 @@ export const useMapStore = defineStore("map", {
 			if (!this.map || dialogStore.dialogs.moreInfo) {
 				return;
 			}
+			this.resetSearchCircle();
 			map_configs.map((map_config) => {
 				let mapLayerId = `${map_config.index}-${map_config.type}-${map_config.city}`;
 				if (map_config && map_config.type === "arc") {
@@ -2405,6 +2423,7 @@ export const useMapStore = defineStore("map", {
 			if (!this.map || dialogStore.dialogs.moreInfo) {
 				return;
 			}
+			this.resetSearchCircle();
 			map_configs.map((map_config) => {
 				let mapLayerId = `${map_config.index}-${map_config.type}-${map_config.city}`;
 				if (map_config.title !== xParam) {
@@ -2428,6 +2447,7 @@ export const useMapStore = defineStore("map", {
 			if (!this.map || dialogStore.dialogs.moreInfo) {
 				return;
 			}
+			this.resetSearchCircle();
 			map_configs.map((map_config) => {
 				let mapLayerId = `${map_config.index}-${map_config.type}-${map_config.city}`;
 				if (map_config && map_config.type === "arc") {
@@ -2445,6 +2465,7 @@ export const useMapStore = defineStore("map", {
 			if (!this.map || dialogStore.dialogs.moreInfo) {
 				return;
 			}
+			this.resetSearchCircle();
 			map_configs.map((map_config) => {
 				let mapLayerId = `${map_config.index}-${map_config.type}-${map_config.city}`;
 				this.map.setLayoutProperty(mapLayerId, "visibility", "visible");
@@ -2514,37 +2535,32 @@ export const useMapStore = defineStore("map", {
 			if (this.loadingLayers.length !== 0) return;
 			this.loadingLayers.push("rendering");
 
-			let targetLayer = -1;
-			this.currentVisibleLayers.forEach((layer, index) => {
-				if (["circle", "symbol"].includes(layer.split("-")[1])) {
-					targetLayer = index;
-				}
-			});
+			const pointLayerIds = this.getSearchCircleLayerIds(
+				this.currentVisibleLayers,
+			);
+			const targetLayerId = pointLayerIds[pointLayerIds.length - 1];
 
-			if (targetLayer === -1) {
+			if (!targetLayerId) {
 				this.loadingLayers.pop();
 				return;
 			}
 
 			this.removePopup();
-			const layerSourceType =
-				this.mapConfigs[this.currentVisibleLayers[targetLayer]].source;
+			const layerSourceType = this.mapConfigs[targetLayerId].source;
 
 			const features = [];
 
 			if (layerSourceType === "geojson") {
 				features.push(
-					...this.map.getSource(
-						`${this.currentVisibleLayers[targetLayer]}-source`,
-					)._data.features,
+					...this.map.getSource(`${targetLayerId}-source`)._data
+						.features,
 				);
 			} else {
 				const res = await axios.get(
 					`${
 						location.origin
 					}/geo_server/taipei_vioc/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=taipei_vioc%3A${
-						this.mapConfigs[this.currentVisibleLayers[targetLayer]]
-							.index
+						this.mapConfigs[targetLayerId].index
 					}&maxFeatures=1000000&outputFormat=application%2Fjson`,
 				);
 
@@ -2596,12 +2612,20 @@ export const useMapStore = defineStore("map", {
 				: this.currentVisibleLayers;
 
 			return selectedLayerIds.filter((layerId) => {
-				const layerType = layerId.split("-")[1];
+				const layerType = this.getMapLayerType(layerId);
 				return (
 					["circle", "symbol"].includes(layerType) &&
 					this.currentVisibleLayers.includes(layerId)
 				);
 			});
+		},
+		getMapLayerType(layerId) {
+			if (this.mapConfigs[layerId]?.type) {
+				return this.mapConfigs[layerId].type;
+			}
+
+			const parts = layerId.split("-");
+			return parts.length >= 3 ? parts[parts.length - 2] : "";
 		},
 		getSearchCircleColor(index) {
 			const colors = [
@@ -2784,6 +2808,15 @@ export const useMapStore = defineStore("map", {
 				return;
 			}
 
+			const selectedPointLayerIds = this.getSearchCircleLayerIds(
+				this.searchCircleLayerIds,
+			);
+			if (selectedPointLayerIds.length === 0) {
+				this.resetSearchCircle();
+				dialogStore.showNotification("fail", "請先開啟至少一個點位圖層");
+				return;
+			}
+
 			this.clearSearchCircle();
 			this.removePopup();
 
@@ -2796,6 +2829,7 @@ export const useMapStore = defineStore("map", {
 				type: "geojson",
 				data: searchCircle,
 			});
+			this.searchCircleCenter = center;
 			this.map.addLayer({
 				id: "walk-search-circle-fill",
 				type: "fill",
@@ -2836,14 +2870,6 @@ export const useMapStore = defineStore("map", {
 					}) <= radiusKm
 				);
 			};
-
-			const selectedPointLayerIds = this.getSearchCircleLayerIds(
-				this.searchCircleLayerIds,
-			);
-			if (selectedPointLayerIds.length === 0) {
-				dialogStore.showNotification("fail", "請先開啟至少一個點位圖層");
-				return;
-			}
 
 			const featuresByLayer = [];
 			let renderedFeatures = [];
@@ -2910,6 +2936,47 @@ export const useMapStore = defineStore("map", {
 				},
 			});
 			this.map.addLayer({
+				id: "walk-search-circle-points-halo",
+				type: "circle",
+				source: "walk-search-circle-points-source",
+				paint: {
+					"circle-radius": [
+						"interpolate",
+						["linear"],
+						["zoom"],
+						12,
+						13,
+						16,
+						22,
+					],
+					"circle-color": ["coalesce", ["get", "__searchColor"], "#5a9cf8"],
+					"circle-opacity": 0.4,
+					"circle-blur": 0.5,
+					"circle-stroke-color": "#111111",
+					"circle-stroke-width": 1,
+				},
+			});
+			this.map.addLayer({
+				id: "walk-search-circle-points-ring",
+				type: "circle",
+				source: "walk-search-circle-points-source",
+				paint: {
+					"circle-radius": [
+						"interpolate",
+						["linear"],
+						["zoom"],
+						12,
+						8,
+						16,
+						13,
+					],
+					"circle-color": ["coalesce", ["get", "__searchColor"], "#5a9cf8"],
+					"circle-opacity": 0.95,
+					"circle-stroke-color": "#111111",
+					"circle-stroke-width": 3,
+				},
+			});
+			this.map.addLayer({
 				id: "walk-search-circle-points",
 				type: "circle",
 				source: "walk-search-circle-points-source",
@@ -2919,16 +2986,17 @@ export const useMapStore = defineStore("map", {
 						["linear"],
 						["zoom"],
 						12,
-						4,
+						5,
 						16,
-						7,
+						9,
 					],
 					"circle-color": ["coalesce", ["get", "__searchColor"], "#5a9cf8"],
-					"circle-opacity": 0.92,
+					"circle-opacity": 1,
 					"circle-stroke-color": "#ffffff",
-					"circle-stroke-width": 1,
+					"circle-stroke-width": 2,
 				},
 			});
+			this.isSearchCircleActive = true;
 
 			const summaryHtml = summaryItems
 				.length
@@ -2972,7 +3040,7 @@ export const useMapStore = defineStore("map", {
 				return;
 			}
 			this.searchCircleRadiusKm = radiusKm;
-			this.searchCircleLayerIds = options.layerIds || [];
+			this.searchCircleLayerIds = [];
 			this.isSearchCircleClickMode = true;
 			dialogStore.showNotification(
 				"info",
@@ -2983,10 +3051,32 @@ export const useMapStore = defineStore("map", {
 		cancelSearchCircleClickMode() {
 			this.isSearchCircleClickMode = false;
 		},
+		isPointInsideSearchCircle(lng, lat) {
+			if (!this.searchCircleCenter || !this.searchCircleRadiusKm) return false;
+			const target = [Number(lng), Number(lat)];
+			if (
+				!Number.isFinite(target[0]) ||
+				!Number.isFinite(target[1])
+			) {
+				return false;
+			}
+
+			return (
+				distance(point(this.searchCircleCenter), point(target), {
+					units: "kilometers",
+				}) <= this.searchCircleRadiusKm
+			);
+		},
 		clearSearchCircle() {
 			if (!this.map) return;
 			if (this.map.getLayer("walk-search-circle-points")) {
 				this.map.removeLayer("walk-search-circle-points");
+			}
+			if (this.map.getLayer("walk-search-circle-points-ring")) {
+				this.map.removeLayer("walk-search-circle-points-ring");
+			}
+			if (this.map.getLayer("walk-search-circle-points-halo")) {
+				this.map.removeLayer("walk-search-circle-points-halo");
 			}
 			if (this.map.getLayer("walk-search-circle-fill")) {
 				this.map.removeLayer("walk-search-circle-fill");
@@ -3004,6 +3094,14 @@ export const useMapStore = defineStore("map", {
 				this.searchCircleMarker.remove();
 				this.searchCircleMarker = null;
 			}
+			this.isSearchCircleActive = false;
+			this.searchCircleCenter = null;
+			this.searchCircleLayerIds = [];
+		},
+		resetSearchCircle() {
+			this.cancelSearchCircleClickMode();
+			this.clearSearchCircle();
+			this.removePopup();
 		},
 
 		/* Clearing the map */

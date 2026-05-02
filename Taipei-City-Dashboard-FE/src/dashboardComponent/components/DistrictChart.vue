@@ -283,7 +283,7 @@ function handleDataSelection(index) {
 }
 
 function calcOpacity(value) {
-	const highest = districtData.value.highest;
+	const {highest} = districtData.value;
 	if (!highest || highest === 0) return 0.12;
 	if (!value || value <= 0) return 0.12;
 	return 0.15 + 0.85 * Math.sqrt(value / highest);
