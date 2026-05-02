@@ -19,7 +19,9 @@ export const chartTypes = {
 	IndicatorChart: "指標圖",
 	MapLegend: "地圖圖例",
 	TextUnitChart: "文字單位圖",
+	BeachCleanupEventsChart: "活動清單",
 	CameraMonitorChart: "監視器總覽",
+	RankingOverviewChart: "排名總覽",
 };
 
 export const chartsPerDataType = {
@@ -42,7 +44,9 @@ export const chartsPerDataType = {
 		"IndicatorChart",
 		"PolarAreaChart",
 		"TextUnitChart",
+		"BeachCleanupEventsChart",
 		"CameraMonitorChart",
+		"RankingOverviewChart",
 	],
 	time: ["TimelineSeparateChart", "TimelineStackedChart", "ColumnLineChart"],
 	percent: [

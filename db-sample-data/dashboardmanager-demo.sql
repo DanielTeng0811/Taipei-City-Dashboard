@@ -156,12 +156,12 @@ SELECT pg_catalog.setval('public.groups_id_seq', (SELECT COALESCE(MAX(id), 4) FR
 --
 
 \i /opt/db-sample-data/dashboardmanager-eco-zones.sql
-\i /opt/db-sample-data/dashboardmanager-eco-15min.sql
 \i /opt/db-sample-data/dashboardmanager-senior-service.sql
 \i /opt/db-sample-data/dashboardmanager-eco-restaurant.sql
 \i /opt/db-sample-data/dashboardmanager-medical-garbage.sql
-\i /opt/db-sample-data/dashboardmanager-camera.sql
 \i /opt/db-sample-data/dashboardmanager-clothing-recycle-bins.sql
+\i /opt/db-sample-data/dashboardmanager-beach-cleanup-events.sql
+\i /opt/db-sample-data/dashboardmanager-air-quality.sql
 
 -- ─── 永續環境 Dashboard (inlined from dashboardmanager-sustainable-env.sql) ────
 --
@@ -170,10 +170,10 @@ SELECT pg_catalog.setval('public.groups_id_seq', (SELECT COALESCE(MAX(id), 4) FR
 -- Depends on (run first):
 --   dashboardmanager-demo.sql
 --   dashboardmanager-eco-zones.sql          (eco_zone1=320, eco_zone2=330, eco_zone3=340, eco_zone4=350)
---   dashboardmanager-eco-15min.sql          (eco_living_15min=310)
 --   dashboardmanager-eco-restaurant.sql     (eco_restaurant_taipei=223)
 --   dashboardmanager-clothing-recycle-bins.sql
 --   dashboardmanager-medical-garbage.sql    (garbage_truck)
+--   dashboardmanager-beach-cleanup-events.sql
 --
 
 BEGIN;
@@ -214,6 +214,11 @@ WHERE "index" = 'sustainable_env_tpe' AND NOT (350 = ANY(components));
 UPDATE public.dashboards
 SET components = array_append(components, 310)
 WHERE "index" = 'sustainable_env_tpe' AND NOT (310 = ANY(components));
+
+-- 空氣品質總覽 (air_quality_overview, id=360)
+UPDATE public.dashboards
+SET components = array_append(components, 360)
+WHERE "index" = 'sustainable_env_tpe' AND NOT (360 = ANY(components));
 
 -- 臺北市環保餐廳分布 (eco_restaurant_taipei, id=223)
 UPDATE public.dashboards
@@ -271,6 +276,11 @@ UPDATE public.dashboards
 SET components = array_append(components, 310)
 WHERE "index" = 'sustainable_env_newtpe' AND NOT (310 = ANY(components));
 
+-- 空氣品質總覽 (air_quality_overview, id=360)
+UPDATE public.dashboards
+SET components = array_append(components, 360)
+WHERE "index" = 'sustainable_env_newtpe' AND NOT (360 = ANY(components));
+
 -- 臺北市環保餐廳分布 (eco_restaurant_taipei, id=223)
 UPDATE public.dashboards
 SET components = array_append(components, 223)
@@ -281,6 +291,18 @@ DO $$
 DECLARE v_id integer;
 BEGIN
     SELECT id INTO v_id FROM public.components WHERE "index" = 'clothing_recycle_bins';
+    IF v_id IS NOT NULL THEN
+        UPDATE public.dashboards
+        SET components = array_append(components, v_id)
+        WHERE "index" = 'sustainable_env_newtpe' AND NOT (v_id = ANY(components));
+    END IF;
+END $$;
+
+-- 雙北淨灘活動快訊 (beach_cleanup_events, id auto-assigned)
+DO $$
+DECLARE v_id integer;
+BEGIN
+    SELECT id INTO v_id FROM public.components WHERE "index" = 'beach_cleanup_events';
     IF v_id IS NOT NULL THEN
         UPDATE public.dashboards
         SET components = array_append(components, v_id)

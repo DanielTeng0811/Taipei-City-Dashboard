@@ -4,7 +4,7 @@
 -- Fix: DistrictChart requires a complete district × org_type cross product.
 --      The original simple GROUP BY left gaps for missing combinations, causing
 --      rendering issues. Now uses CROSS JOIN + COALESCE(0) pattern (same as
---      senior_service_distribution, eco_living_15min, medical_institution).
+--      senior_service_distribution and medical_institution).
 --
 -- Fix: Added taipei-specific map + query_chart (filtered by source_city='臺北市')
 --      so the component renders correctly inside the 永續環境 taipei dashboard.
