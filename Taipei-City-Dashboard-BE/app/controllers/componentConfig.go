@@ -246,6 +246,7 @@ func UpdateComponentChartConfig(c *gin.Context) {
 		chartConfig.Unit,
 		chartConfig.Levels,
 		chartConfig.RankingConfig,
+		chartConfig.TimelineConfig,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})

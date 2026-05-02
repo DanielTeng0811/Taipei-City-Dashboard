@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 // import "./styles/chartStyles.css";
 // import "./styles/toggleswitch.css";
 import "material-icons/iconfont/material-icons.css";
@@ -29,6 +29,7 @@ import IconPercentChart from "./components/IconPercentChart.vue";
 import IndicatorChart from "./components/IndicatorChart.vue";
 import TextUnitChart from "./components/TextUnitChart.vue";
 import RankingOverviewChart from "./components/RankingOverviewChart.vue";
+import TimelineControl from "./components/TimelineControl.vue";
 
 import MapLegendSvg from "./assets/chart/MapLegend.svg";
 import DistrictChartSvg from "./assets/chart/DistrictChart.svg";
@@ -94,6 +95,230 @@ const emits = defineEmits([
 ]);
 
 const activeChart = ref(props.config.chart_config.types[0]);
+
+const MONTH_PATTERN = /^\d{2,3}年\s*\d{1,2}月\s*$/;
+const YEAR_PATTERN = /^\d{2,3}年\s*$/;
+const TIMELINE_FIELD_CANDIDATES = [
+	"time",
+	"period",
+	"date",
+	"month",
+	"year",
+	"timeline",
+	"timestamp",
+	"統計期",
+	"年月",
+	"月份",
+	"年度",
+	"name",
+];
+
+const timelineConfig = computed(() => {
+	const config = props.config.chart_config?.timeline_config;
+	if (config === true) return { enabled: true };
+	return config || {};
+});
+
+const isTimelineEnabled = computed(() => {
+	if (timelineConfig.value?.enabled) return true;
+
+	const data = props.config.chart_data;
+	if (!Array.isArray(data) || data.length < 2) return false;
+	return data.every(
+		(s) => isTimelineValue(getSeriesTimelineValue(s))
+	);
+});
+
+function isTimelineValue(value) {
+	if (value === null || value === undefined) return false;
+	return MONTH_PATTERN.test(String(value)) || YEAR_PATTERN.test(String(value));
+}
+
+function getTimelineFields() {
+	const field = timelineConfig.value?.field || timelineConfig.value?.timeField;
+	return field ? [field, ...TIMELINE_FIELD_CANDIDATES] : TIMELINE_FIELD_CANDIDATES;
+}
+
+function getTimelineValueFromObject(item, includeName = false) {
+	if (!item || typeof item !== "object") return null;
+	const fields = includeName ? getTimelineFields() : getTimelineFields().filter((field) => field !== "name");
+	const field = fields.find((key) => item[key] !== undefined && item[key] !== null && item[key] !== "");
+	return field ? String(item[field]) : null;
+}
+
+function getSeriesTimelineValue(series) {
+	if (!series || typeof series !== "object") return null;
+	const explicitValue = getTimelineValueFromObject(series, true);
+	if (explicitValue) return explicitValue;
+	return isTimelineValue(series.name) ? String(series.name) : null;
+}
+
+function getPointTimelineValue(point) {
+	return getTimelineValueFromObject(point, false);
+}
+
+function collectTimelineValuesFromSeries(data) {
+	const times = [];
+	data.forEach((series) => {
+		const seriesTime = getSeriesTimelineValue(series);
+		if (seriesTime) {
+			times.push(seriesTime);
+			return;
+		}
+		if (Array.isArray(series?.data)) {
+			series.data.forEach((point) => {
+				const pointTime = getPointTimelineValue(point);
+				if (pointTime) times.push(pointTime);
+			});
+		}
+	});
+	return times;
+}
+
+const timelineGranularity = computed(() => {
+	if (timelineConfig.value?.granularity && timelineConfig.value.granularity !== "auto") {
+		return timelineConfig.value.granularity;
+	}
+	const first = availableTimes.value[0];
+	return first && MONTH_PATTERN.test(first) ? "month" : "year";
+});
+
+const availableTimes = computed(() => {
+	if (!isTimelineEnabled.value || !props.config.chart_data) return [];
+	return collectTimelineValuesFromSeries(props.config.chart_data)
+		.filter((time, index, times) => time && times.indexOf(time) === index);
+});
+
+const selectedTime = ref(null);
+
+watch(
+	availableTimes,
+	(times) => {
+		if (times.length > 0 && (!selectedTime.value || !times.includes(selectedTime.value))) {
+			selectedTime.value = times[0]; // default: most-recent period
+		}
+	},
+	{ immediate: true }
+);
+
+const timelineSortOrder = computed(() => {
+	const order = timelineConfig.value?.sort;
+	return ["asc", "desc"].includes(order) ? order : null;
+});
+
+function sortTimelineSeries(series, categories) {
+	if (
+		!timelineSortOrder.value ||
+		!series?.[0] ||
+		!Array.isArray(categories) ||
+		categories.length !== series[0].data?.length
+	) {
+		return {
+			series,
+			categories,
+		};
+	}
+
+	const pairs = categories.map((category, index) => {
+		const item = series[0].data[index];
+		return {
+			category,
+			item,
+			value: Number(item?.y ?? item),
+		};
+	});
+	pairs.sort((a, b) =>
+		timelineSortOrder.value === "asc"
+			? a.value - b.value
+			: b.value - a.value
+	);
+
+	return {
+		series: [
+			{
+				...series[0],
+				data: pairs.map((pair) => pair.item),
+			},
+		],
+		categories: pairs.map((pair) => pair.category),
+	};
+}
+
+function stripTimelineFields(item) {
+	if (!item || typeof item !== "object") return item;
+	return Object.fromEntries(
+		Object.entries(item).filter(([key]) => !getTimelineFields().includes(key))
+	);
+}
+
+function filterPointLevelTimeline(series, selectedTime) {
+	const filteredSeries = series
+		.map((item) => {
+			if (!Array.isArray(item?.data)) return item;
+			return {
+				...item,
+				data: item.data
+					.filter((point) => getPointTimelineValue(point) === selectedTime)
+					.map(stripTimelineFields),
+			};
+		})
+		.filter((item) => !Array.isArray(item?.data) || item.data.length > 0);
+
+	const firstData = filteredSeries.find((item) => Array.isArray(item?.data))?.data || [];
+	const categories = firstData
+		.map((point) => point?.x)
+		.filter((category) => category !== undefined && category !== null);
+
+	return {
+		series: filteredSeries,
+		categories: categories.length > 0 ? categories : props.config.chart_config?.categories,
+	};
+}
+
+function filterSeriesLevelTimeline(series, selectedTime) {
+	const filteredSeries = series.filter((item) => getSeriesTimelineValue(item) === selectedTime);
+	return {
+		series: filteredSeries,
+		categories: props.config.chart_config?.categories,
+	};
+}
+
+const displayChartPayload = computed(() => {
+	const chartConfig = props.config.chart_config;
+	const chartData = props.config.chart_data;
+	if (!isTimelineEnabled.value || !selectedTime.value || !chartData) {
+		return {
+			chartConfig,
+			series: chartData,
+		};
+	}
+
+	const hasSeriesLevelTimeline = chartData.some((series) => getSeriesTimelineValue(series));
+	const filteredPayload = hasSeriesLevelTimeline
+		? filterSeriesLevelTimeline(chartData, selectedTime.value)
+		: filterPointLevelTimeline(chartData, selectedTime.value);
+	const sorted = sortTimelineSeries(
+		filteredPayload.series,
+		filteredPayload.categories || []
+	);
+
+	return {
+		chartConfig: {
+			...chartConfig,
+			categories: sorted.categories,
+		},
+		series: sorted.series,
+	};
+});
+
+const displayChartData = computed(() => {
+	return displayChartPayload.value.series;
+});
+
+const displayChartConfig = computed(() => {
+	return displayChartPayload.value.chartConfig;
+});
+
 const activeCity = computed({
 	get: () => props.activeCity,
 	set: (value) => {
@@ -243,6 +468,7 @@ function returnChartComponent(name, svg) {
         half: mode === 'half',
         large: mode === 'large',
         preview: mode === 'preview',
+        'has-timeline': isTimelineEnabled && availableTimes.length > 0,
       },
     ]"
     :style="style"
@@ -343,7 +569,8 @@ function returnChartComponent(name, svg) {
     <div
       v-if="
         (!mode.includes('map') || toggleOn) &&
-          mode !== 'preview'
+          mode !== 'preview' &&
+          (selectBtn || config.chart_config.types.length > 1 || (isTimelineEnabled && availableTimes.length > 0))
       "
       class="dashboardcomponent-control"
     >
@@ -363,6 +590,13 @@ function returnChartComponent(name, svg) {
           </option>
         </template>
       </select>
+      <TimelineControl
+        v-if="isTimelineEnabled && availableTimes.length > 0"
+        v-model="selectedTime"
+        class="dashboardcomponent-control-timeline"
+        :times="availableTimes"
+        :granularity="timelineGranularity"
+      />
       <div
         v-if="config.chart_config.types.length > 1"
         class="dashboardcomponent-control-group"
@@ -380,6 +614,7 @@ function returnChartComponent(name, svg) {
         </button>
       </div>
     </div>
+
     <!-- Main Content -->
     <div
       v-if="mode === 'preview'"
@@ -420,7 +655,7 @@ function returnChartComponent(name, svg) {
         'half-chart': mode === 'half',
         'mapopen-chart': mode === 'map',
         'halfmapopen-chart': mode === 'halfmap',
-        'dashboardcomponent-chart-custom-scroll': ['RankingOverviewChart'].includes(activeChart),
+        'dashboardcomponent-chart-custom-scroll': ['RankingOverviewChart'].includes(activeChart) || (isTimelineEnabled && activeChart === 'BarChart'),
       }"
     >
       <component
@@ -429,8 +664,8 @@ function returnChartComponent(name, svg) {
         :key="`${props.config.index}-${item}-chart-${item.city}`"
         :active-chart="activeChart"
         :active-city="activeCity"
-        :chart_config="config.chart_config"
-        :series="config.chart_data"
+        :chart_config="displayChartConfig"
+        :series="displayChartData"
         :map_config="config.map_config"
         :map_filter="config.map_filter"
         :map_filter_on="mode.includes('map')"
@@ -639,6 +874,7 @@ button:hover {
 				user-select: none;
 			}
 		}
+
 		&-button {
 			min-width: 48px;
 			display: flex;
@@ -696,23 +932,34 @@ button:hover {
 	&-control {
 		width: 100%;
 		display: flex;
-		// justify-content: center;
 		align-items: center;
-		// position: absolute;
+		gap: 0.5rem;
 		top: 4.2rem;
 		left: 0;
 		z-index: 8;
 		padding: 8px 0;
+		overflow: visible;
+
+		.has-timeline & {
+			display: grid;
+			grid-template-columns: max-content 166px max-content;
+			column-gap: 0.8rem;
+			align-items: center;
+			justify-content: start;
+		}
 
 		&-group {
 			display: flex;
 			justify-content: center;
 			align-items: center;
+			gap: 0.45rem;
 			margin: 0 auto;
 			transform: translateX(-15%);
+			min-width: 0;
+			overflow: visible;
 
 			&-button {
-				margin: 0 2px;
+				margin: 0;
 				padding: 4px 4px;
 				border-radius: 5px;
 				background-color: rgb(77, 77, 77);
@@ -720,6 +967,7 @@ button:hover {
 				color: var(--color-complement-text);
 				font-size: var(--font-s);
 				text-align: center;
+				white-space: nowrap;
 				transition: color 0.2s, opacity 0.2s;
 				user-select: none;
 	
@@ -735,6 +983,25 @@ button:hover {
 			}
 		}
 
+		&-timeline {
+			flex: 0 0 166px;
+			min-width: 0;
+			margin: 0;
+		}
+
+		.has-timeline &-group {
+			grid-column: 3;
+			justify-self: start;
+			margin: 0;
+			transform: none;
+		}
+
+		.has-timeline &-timeline {
+			grid-column: 2;
+			width: 166px;
+			overflow: hidden;
+		}
+
 		.selectBtn {
 			background-color: var(--color-component-background);
 			padding: 3px;
@@ -743,6 +1010,24 @@ button:hover {
 				cursor: not-allowed;
 			}
 		}
+
+		@media (max-width: 760px) {
+			flex-wrap: wrap;
+
+			.has-timeline & {
+				grid-template-columns: max-content 154px max-content;
+				column-gap: 0.65rem;
+			}
+
+			&-timeline {
+				flex-basis: 154px;
+			}
+
+			.has-timeline &-timeline {
+				width: 154px;
+			}
+		}
+
 	}
 
 	&-chart,
@@ -852,6 +1137,7 @@ button:hover {
 	}
 }
 
+// When timeline is visible, shrink the chart area to prevent overflow.
 @keyframes spin {
 	to {
 		transform: rotate(360deg);
