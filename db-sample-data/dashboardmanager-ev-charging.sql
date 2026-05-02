@@ -80,7 +80,7 @@ VALUES
   '顯示充電站相關資訊',
   '顯示充電站資料的詳細說明',
   '可用於觀察充電站分布或服務情形',
-  ARRAY[]::text[],
+  ARRAY['https://data.gov.tw/dataset/170220'],
   ARRAY['doit'],
   NOW(),
   NOW(),
