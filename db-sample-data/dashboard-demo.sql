@@ -15911,9 +15911,10 @@ CREATE TRIGGER tran_ubike_realtime_new_tpe_mtime BEFORE INSERT OR UPDATE ON publ
 \i /opt/db-sample-data/dashboard-medical-garbage.sql
 \i /opt/db-sample-data/dashboard-clothing-recycle-bins.sql
 \i /opt/db-sample-data/dashboard-beach-cleanup-events.sql
+\i /opt/db-sample-data/dashboard-air-quality.sql
 
+\i /opt/db-sample-data/dashboard-camera.sql
 
 --
 -- PostgreSQL database dump complete
 --
-

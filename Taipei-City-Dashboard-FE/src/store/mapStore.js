@@ -641,6 +641,11 @@ export const useMapStore = defineStore("map", {
 		addMapLayer(map_config) {
 			let extra_paint_configs = {};
 			let extra_layout_configs = {};
+			const paintConfig = { ...map_config.paint };
+			if (paintConfig["filter-disabled"]) {
+				map_config.filter_disabled = true;
+				delete paintConfig["filter-disabled"];
+			}
 			if (map_config.icon) {
 				extra_paint_configs = {
 					...maplayerCommonPaint[
@@ -684,7 +689,7 @@ export const useMapStore = defineStore("map", {
 				paint: {
 					...maplayerCommonPaint[`${map_config.type}`],
 					...extra_paint_configs,
-					...map_config.paint,
+					...paintConfig,
 				},
 				layout: {
 					...maplayerCommonLayout[`${map_config.type}`],
@@ -999,6 +1004,10 @@ export const useMapStore = defineStore("map", {
 			const min = map_config.paint?.["isoline-min"] || 0;
 			const max = map_config.paint?.["isoline-max"] || 100;
 			const step = map_config.paint?.["isoline-step"] || 2;
+			const filterDisabled =
+				map_config.filter_disabled ||
+				map_config.paint?.["filter-disabled"];
+			map_config.filter_disabled = filterDisabled;
 
 			// - Repeat the marching square algorithm for differnt iso-values (40, 42, 44 ... 74 in this case)
 			for (let isoValue = min; isoValue <= max; isoValue += step) {
@@ -1035,11 +1044,13 @@ export const useMapStore = defineStore("map", {
 			delete map_config.paint?.["isoline-min"];
 			delete map_config.paint?.["isoline-max"];
 			delete map_config.paint?.["isoline-step"];
+			delete map_config.paint?.["filter-disabled"];
 
 			let new_map_config = {
 				...map_config,
 				type: "line",
 				source: "geojson",
+				filter_disabled: filterDisabled,
 			};
 			this.addMapLayer(new_map_config);
 		},
@@ -2353,6 +2364,12 @@ export const useMapStore = defineStore("map", {
 			this.resetSearchCircle();
 			map_configs.map((map_config) => {
 				let mapLayerId = `${map_config.index}-${map_config.type}-${map_config.city}`;
+				if (
+					map_config.filter_disabled ||
+					map_config.paint?.["filter-disabled"]
+				) {
+					return;
+				}
 				if (map_config && map_config.type === "arc") {
 					this.deckGlLayer[mapLayerId].config.data = this.deckGlLayer[
 						mapLayerId
@@ -2450,6 +2467,12 @@ export const useMapStore = defineStore("map", {
 			this.resetSearchCircle();
 			map_configs.map((map_config) => {
 				let mapLayerId = `${map_config.index}-${map_config.type}-${map_config.city}`;
+				if (
+					map_config.filter_disabled ||
+					map_config.paint?.["filter-disabled"]
+				) {
+					return;
+				}
 				if (map_config && map_config.type === "arc") {
 					this.deckGlLayer[mapLayerId].config.data =
 						this.deckGlLayer[mapLayerId].data;

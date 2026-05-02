@@ -24,4 +24,6 @@ export const chartTypes: chartType = {
 	MapLegend: "地圖圖例", // V
 	TextUnitChart: "文字數值圖", // V
 	BeachCleanupEventsChart: "活動清單", // V
+	CameraMonitorChart: "監視器總覽",
+	RankingOverviewChart: "排名總覽",
 };
