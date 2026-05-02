@@ -96,9 +96,10 @@ const emits = defineEmits([
 
 const activeChart = ref(props.config.chart_config.types[0]);
 
-const MONTH_PATTERN = /^\d{2,3}年\s*\d{1,2}月\s*$/;
-const YEAR_PATTERN = /^\d{2,3}年\s*$/;
+const MONTH_PATTERN = /^\d{2,4}年\s*\d{1,2}月\s*$/;
+const YEAR_PATTERN = /^\d{2,4}年\s*$/;
 const TIMELINE_FIELD_CANDIDATES = [
+	"__timeline",
 	"time",
 	"period",
 	"date",
@@ -112,6 +113,7 @@ const TIMELINE_FIELD_CANDIDATES = [
 	"年度",
 	"name",
 ];
+const DEFAULT_SERIES_TIMELINE_DELIMITERS = ["::"];
 
 const timelineConfig = computed(() => {
 	const config = props.config.chart_config?.timeline_config;
@@ -146,16 +148,60 @@ function getTimelineValueFromObject(item, includeName = false) {
 	return field ? String(item[field]) : null;
 }
 
+function getSeriesTimelineDelimiters() {
+	const configuredDelimiter = timelineConfig.value?.nameDelimiter;
+	const configuredDelimiters = Array.isArray(configuredDelimiter)
+		? configuredDelimiter
+		: [configuredDelimiter];
+	return [...configuredDelimiters, ...DEFAULT_SERIES_TIMELINE_DELIMITERS]
+		.filter((delimiter) => typeof delimiter === "string" && delimiter.length > 0)
+		.filter((delimiter, index, delimiters) => delimiters.indexOf(delimiter) === index);
+}
+
+function parseTimelineSeriesName(name) {
+	if (typeof name !== "string") return null;
+	for (const delimiter of getSeriesTimelineDelimiters()) {
+		const delimiterIndex = name.indexOf(delimiter);
+		if (delimiterIndex <= 0) continue;
+
+		const time = name.slice(0, delimiterIndex).trim();
+		const displayName = name.slice(delimiterIndex + delimiter.length).trim();
+		if (isTimelineValue(time) && displayName) {
+			return { time, name: displayName };
+		}
+	}
+	return null;
+}
+
 function getSeriesTimelineValue(series) {
 	if (!series || typeof series !== "object") return null;
-	const explicitValue = getTimelineValueFromObject(series, true);
+	const explicitValue = getTimelineValueFromObject(series, false);
 	if (explicitValue) return explicitValue;
+	const parsedName = parseTimelineSeriesName(series.name);
+	if (parsedName) return parsedName.time;
 	return isTimelineValue(series.name) ? String(series.name) : null;
 }
 
 function getPointTimelineValue(point) {
 	return getTimelineValueFromObject(point, false);
 }
+
+function normalizeTimelineSeries(series) {
+	const parsedName = parseTimelineSeriesName(series?.name);
+	if (!parsedName || !series || typeof series !== "object") {
+		return series;
+	}
+	return {
+		...series,
+		name: parsedName.name,
+		__timeline: parsedName.time,
+	};
+}
+
+const normalizedChartData = computed(() => {
+	if (!Array.isArray(props.config.chart_data)) return props.config.chart_data;
+	return props.config.chart_data.map(normalizeTimelineSeries);
+});
 
 function collectTimelineValuesFromSeries(data) {
 	const times = [];
@@ -184,8 +230,8 @@ const timelineGranularity = computed(() => {
 });
 
 const availableTimes = computed(() => {
-	if (!isTimelineEnabled.value || !props.config.chart_data) return [];
-	return collectTimelineValuesFromSeries(props.config.chart_data)
+	if (!isTimelineEnabled.value || !normalizedChartData.value) return [];
+	return collectTimelineValuesFromSeries(normalizedChartData.value)
 		.filter((time, index, times) => time && times.indexOf(time) === index);
 });
 
@@ -194,6 +240,10 @@ const selectedTime = ref(null);
 watch(
 	availableTimes,
 	(times) => {
+		if (times.length === 0) {
+			selectedTime.value = null;
+			return;
+		}
 		if (times.length > 0 && (!selectedTime.value || !times.includes(selectedTime.value))) {
 			selectedTime.value = times[0]; // default: most-recent period
 		}
@@ -251,6 +301,26 @@ function stripTimelineFields(item) {
 	);
 }
 
+function stripSeriesTimelineFields(series) {
+	if (!series || typeof series !== "object") return series;
+	const fields = getTimelineFields().filter((field) => field !== "name");
+	return Object.fromEntries(
+		Object.entries(series).filter(([key]) => !fields.includes(key))
+	);
+}
+
+function formatSeriesForSelectedTimeline(series) {
+	const cleanedSeries = stripSeriesTimelineFields(series);
+	const parsedName = parseTimelineSeriesName(series?.name);
+	if (!parsedName || !cleanedSeries || typeof cleanedSeries !== "object") {
+		return cleanedSeries;
+	}
+	return {
+		...cleanedSeries,
+		name: parsedName.name,
+	};
+}
+
 function filterPointLevelTimeline(series, selectedTime) {
 	const filteredSeries = series
 		.map((item) => {
@@ -276,7 +346,9 @@ function filterPointLevelTimeline(series, selectedTime) {
 }
 
 function filterSeriesLevelTimeline(series, selectedTime) {
-	const filteredSeries = series.filter((item) => getSeriesTimelineValue(item) === selectedTime);
+	const filteredSeries = series
+		.filter((item) => getSeriesTimelineValue(item) === selectedTime)
+		.map(formatSeriesForSelectedTimeline);
 	return {
 		series: filteredSeries,
 		categories: props.config.chart_config?.categories,
@@ -285,7 +357,7 @@ function filterSeriesLevelTimeline(series, selectedTime) {
 
 const displayChartPayload = computed(() => {
 	const chartConfig = props.config.chart_config;
-	const chartData = props.config.chart_data;
+	const chartData = normalizedChartData.value;
 	if (!isTimelineEnabled.value || !selectedTime.value || !chartData) {
 		return {
 			chartConfig,
@@ -661,7 +733,7 @@ function returnChartComponent(name, svg) {
       <component
         :is="returnChartComponent(item)"
         v-for="item in config.chart_config.types"
-        :key="`${props.config.index}-${item}-chart-${item.city}`"
+        :key="`${props.config.index}-${item}-chart`"
         :active-chart="activeChart"
         :active-city="activeCity"
         :chart_config="displayChartConfig"
@@ -942,10 +1014,9 @@ button:hover {
 
 		.has-timeline & {
 			display: grid;
-			grid-template-columns: max-content 166px max-content;
-			column-gap: 0.8rem;
+			grid-template-columns: max-content minmax(0, 1fr) max-content;
+			column-gap: 0.35rem;
 			align-items: center;
-			justify-content: start;
 		}
 
 		&-group {
@@ -970,13 +1041,13 @@ button:hover {
 				white-space: nowrap;
 				transition: color 0.2s, opacity 0.2s;
 				user-select: none;
-	
+
 				&:hover {
 					opacity: 1;
 					color: white;
 				}
 			}
-	
+
 			&-active {
 				background-color: var(--color-complement-text);
 				color: white;
@@ -984,22 +1055,22 @@ button:hover {
 		}
 
 		&-timeline {
-			flex: 0 0 166px;
+			flex: 1 1 auto;
 			min-width: 0;
 			margin: 0;
 		}
 
 		.has-timeline &-group {
 			grid-column: 3;
-			justify-self: start;
+			justify-self: end;
 			margin: 0;
 			transform: none;
 		}
 
 		.has-timeline &-timeline {
 			grid-column: 2;
-			width: 166px;
-			overflow: hidden;
+			min-width: 0;
+			overflow: visible;
 		}
 
 		.selectBtn {
@@ -1015,16 +1086,17 @@ button:hover {
 			flex-wrap: wrap;
 
 			.has-timeline & {
-				grid-template-columns: max-content 154px max-content;
-				column-gap: 0.65rem;
+				grid-template-columns: max-content minmax(0, 1fr) max-content;
+				column-gap: 0.25rem;
 			}
 
 			&-timeline {
-				flex-basis: 154px;
+				flex: 1 1 auto;
 			}
 
 			.has-timeline &-timeline {
-				width: 154px;
+				min-width: 0;
+				overflow: visible;
 			}
 		}
 
