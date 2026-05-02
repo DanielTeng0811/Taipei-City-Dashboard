@@ -219,13 +219,16 @@ function next() {
 
 	&-main {
 		display: grid;
-		grid-template-columns: 3.9rem minmax(34px, 1fr);
 		align-items: center;
 		gap: 7px;
 		min-width: 0;
 		height: 19px;
 		padding: 0 3px;
 		cursor: pointer;
+
+		// Year-only: "113年" ≈ 2rem; month: "115年12月" ≈ 3.9rem
+		&.is-year  { grid-template-columns: 2.4rem minmax(34px, 1fr); }
+		&.is-month { grid-template-columns: 3.9rem minmax(34px, 1fr); }
 	}
 }
 
@@ -327,8 +330,9 @@ function next() {
 @media (max-width: 520px) {
 	.timeline-control {
 		&-main {
-			grid-template-columns: 3.9rem minmax(48px, 1fr);
 			gap: 5px;
+			&.is-year  { grid-template-columns: 2.2rem minmax(48px, 1fr); }
+			&.is-month { grid-template-columns: 3.9rem minmax(48px, 1fr); }
 		}
 	}
 }
