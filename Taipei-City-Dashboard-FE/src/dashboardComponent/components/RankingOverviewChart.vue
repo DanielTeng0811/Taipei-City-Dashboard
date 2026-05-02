@@ -27,6 +27,10 @@ const valuePrecision = computed(() => {
 	const precision = Number(rankingConfig.value.value_precision);
 	return Number.isInteger(precision) && precision >= 0 ? precision : 0;
 });
+const valueDivisor = computed(() => {
+	const divisor = Number(rankingConfig.value.value_divisor);
+	return Number.isFinite(divisor) && divisor > 0 ? divisor : 1;
+});
 const sortOrder = computed(() =>
 	rankingConfig.value.order === "asc" ? "asc" : "desc"
 );
@@ -56,7 +60,9 @@ const rankedItems = computed(() => {
 			const value = Number(primarySeries.value.data?.[index]);
 			return {
 				label,
-				value: Number.isFinite(value) ? normalizeValue(value) : null,
+				value: Number.isFinite(value)
+					? normalizeValue(value / valueDivisor.value)
+					: null,
 			};
 		})
 		.filter((item) => item.value !== null)

@@ -11,17 +11,15 @@ ALTER TABLE public.component_charts
 DO $$
 DECLARE v_component_id integer;
 BEGIN
-    SELECT id INTO v_component_id
-    FROM public.components
-    WHERE "index" IN ('air_quality_overview', 'environment_pressure')
-    ORDER BY CASE WHEN id = 360 THEN 0 ELSE 1 END
-    LIMIT 1;
-
-    IF v_component_id IS NOT NULL THEN
+    FOR v_component_id IN
+        SELECT id::integer
+        FROM public.components
+        WHERE "index" IN ('air_quality_overview', 'environment_pressure')
+    LOOP
         UPDATE public.dashboards
         SET components = array_remove(components, v_component_id)
         WHERE v_component_id = ANY(components);
-    END IF;
+    END LOOP;
 END $$;
 
 DELETE FROM public.query_charts
@@ -40,11 +38,12 @@ WHERE "index" IN (
 );
 
 DELETE FROM public.components
-WHERE "index" IN ('air_quality_overview', 'environment_pressure')
-   OR id = 360;
+WHERE "index" = 'environment_pressure';
 
-INSERT INTO public.components (id, "index", name)
-VALUES (360, 'air_quality_overview', '空氣品質總覽');
+INSERT INTO public.components ("index", name)
+VALUES ('air_quality_overview', '空氣品質總覽')
+ON CONFLICT ("index") DO UPDATE
+SET name = EXCLUDED.name;
 
 INSERT INTO public.component_charts ("index", color, types, unit, levels, ranking_config)
 VALUES (
@@ -77,10 +76,9 @@ VALUES (
     }'::json
 );
 
-INSERT INTO public.component_maps (id, "index", title, type, source, size, icon, paint, property)
+INSERT INTO public.component_maps ("index", title, type, source, size, icon, paint, property)
 VALUES
 (
-    360,
     'environment_air_quality_aqi_zones',
     '官方 AQI 等級面',
     'fill',
@@ -107,7 +105,6 @@ VALUES
     ]'::json
 ),
 (
-    361,
     'environment_air_quality_stations',
     '空氣品質測站',
     'circle',
@@ -170,7 +167,10 @@ VALUES
 (
     'air_quality_overview',
     NULL,
-    '{360,361}',
+    ARRAY[
+        (SELECT id::integer FROM public.component_maps WHERE "index" = 'environment_air_quality_aqi_zones' ORDER BY id DESC LIMIT 1),
+        (SELECT id::integer FROM public.component_maps WHERE "index" = 'environment_air_quality_stations' ORDER BY id DESC LIMIT 1)
+    ],
     '{"mode":"byParam","byParam":{"xParam":"district"}}'::json,
     'current',
     NULL,
@@ -192,7 +192,10 @@ VALUES
 (
     'air_quality_overview',
     NULL,
-    '{360,361}',
+    ARRAY[
+        (SELECT id::integer FROM public.component_maps WHERE "index" = 'environment_air_quality_aqi_zones' ORDER BY id DESC LIMIT 1),
+        (SELECT id::integer FROM public.component_maps WHERE "index" = 'environment_air_quality_stations' ORDER BY id DESC LIMIT 1)
+    ],
     '{"mode":"byParam","byParam":{"xParam":"district"}}'::json,
     'current',
     NULL,
@@ -212,25 +215,25 @@ VALUES
     'metrotaipei'
 );
 
-UPDATE public.dashboards
-SET components = array_append(components, 360)
-WHERE "index" = 'map-layers-taipei'
-  AND NOT (360 = ANY(components));
+DO $$
+DECLARE v_component_id integer;
+BEGIN
+    SELECT id::integer INTO v_component_id
+    FROM public.components
+    WHERE "index" = 'air_quality_overview';
 
-UPDATE public.dashboards
-SET components = array_append(components, 360)
-WHERE "index" = 'map-layers-metrotaipei'
-  AND NOT (360 = ANY(components));
-
-UPDATE public.dashboards
-SET components = array_append(components, 360)
-WHERE "index" = 'sustainable_env_tpe'
-  AND NOT (360 = ANY(components));
-
-UPDATE public.dashboards
-SET components = array_append(components, 360)
-WHERE "index" = 'sustainable_env_newtpe'
-  AND NOT (360 = ANY(components));
+    IF v_component_id IS NOT NULL THEN
+        UPDATE public.dashboards
+        SET components = array_append(components, v_component_id)
+        WHERE "index" IN (
+            'map-layers-taipei',
+            'map-layers-metrotaipei',
+            'sustainable_env_tpe',
+            'sustainable_env_newtpe'
+        )
+          AND NOT (v_component_id = ANY(components));
+    END IF;
+END $$;
 
 SELECT pg_catalog.setval('public.components_id_seq', (SELECT COALESCE(MAX(id), 0) FROM public.components), true);
 SELECT pg_catalog.setval('public.component_maps_id_seq', (SELECT COALESCE(MAX(id), 0) FROM public.component_maps), true);
