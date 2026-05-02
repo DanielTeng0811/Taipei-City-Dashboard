@@ -28,8 +28,6 @@ import BarChartWithGoal from "./components/BarChartWithGoal.vue";
 import IconPercentChart from "./components/IconPercentChart.vue";
 import IndicatorChart from "./components/IndicatorChart.vue";
 import TextUnitChart from "./components/TextUnitChart.vue";
-import CameraMonitorChart from "./components/CameraMonitorChart.vue";
-import BeachCleanupEventsChart from "./components/BeachCleanupEventsChart.vue";
 import RankingOverviewChart from "./components/RankingOverviewChart.vue";
 
 import MapLegendSvg from "./assets/chart/MapLegend.svg";
@@ -51,7 +49,6 @@ import BarChartWithGoalSvg from "./assets/chart/BarChartWithGoal.svg";
 import TreemapChartSvg from "./assets/chart/TreemapChart.svg";
 import IndicatorChartSvg from "./assets/chart/IndicatorChart.svg";
 import TextUnitChartSvg from "./assets/chart/TextUnitChart.svg";
-import CameraMonitorChartSvg from "./assets/chart/CameraMonitorChart.svg";
 import RankingOverviewChartSvg from "./assets/chart/RankingOverviewChart.svg";
 
 
@@ -227,10 +224,6 @@ function returnChartComponent(name, svg) {
 		return svg ? IndicatorChartSvg : IndicatorChart;
 	case "TextUnitChart":
 		return svg ? TextUnitChartSvg : TextUnitChart;
-	case "CameraMonitorChart":
-		return svg ? CameraMonitorChartSvg : CameraMonitorChart;
-	case "BeachCleanupEventsChart":
-		return svg ? TextUnitChartSvg : BeachCleanupEventsChart;
 	case "RankingOverviewChart":
 		return svg ? RankingOverviewChartSvg : RankingOverviewChart;
 	default:
@@ -427,7 +420,7 @@ function returnChartComponent(name, svg) {
         'half-chart': mode === 'half',
         'mapopen-chart': mode === 'map',
         'halfmapopen-chart': mode === 'halfmap',
-        'dashboardcomponent-chart-custom-scroll': ['CameraMonitorChart', 'RankingOverviewChart'].includes(activeChart),
+        'dashboardcomponent-chart-custom-scroll': ['RankingOverviewChart'].includes(activeChart),
       }"
     >
       <component

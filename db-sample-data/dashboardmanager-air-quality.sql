@@ -32,6 +32,7 @@ WHERE "index" IN ('air_quality_overview', 'environment_pressure');
 
 DELETE FROM public.component_maps
 WHERE "index" IN (
+    'environment_air_quality_aqi_zones',
     'environment_air_quality_isoline',
     'environment_air_quality_surface',
     'environment_air_pressure_district',
@@ -80,49 +81,29 @@ INSERT INTO public.component_maps (id, "index", title, type, source, size, icon,
 VALUES
 (
     360,
-    'environment_air_quality_stations',
-    '空氣品質等值線',
-    'isoline',
+    'environment_air_quality_aqi_zones',
+    '官方 AQI 等級面',
+    'fill',
     'geojson',
     NULL,
     NULL,
     '{
         "filter-disabled": true,
-        "isoline-key": "aqi",
-        "isoline-min": 20,
-        "isoline-max": 80,
-        "isoline-step": 5,
-        "line-color": [
-            "interpolate",
-            ["linear"],
-            ["to-number", ["get", "value"], 0],
-            25, "#2F9E58",
-            38, "#56B96D",
-            48, "#A9D35E",
-            55, "#F8CF58",
-            75, "#F5AD4A",
-            100, "#F05D5E",
-            150, "#8E63CE"
-        ],
-        "line-opacity": [
+        "fill-color": ["get", "color"],
+        "fill-opacity": [
             "interpolate",
             ["linear"],
             ["zoom"],
-            9, 0.32,
-            13, 0.58,
-            16, 0.72
+            9, 0.36,
+            13, 0.46,
+            16, 0.56
         ],
-        "line-width": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            9, 1,
-            13, 1.6,
-            16, 2.4
-        ]
+        "fill-outline-color": "rgba(255,255,255,0)"
     }'::json,
     '[
-        {"key":"value","name":"AQI"}
+        {"key":"label","name":"AQI等級"},
+        {"key":"min","name":"下限"},
+        {"key":"max","name":"上限"}
     ]'::json
 ),
 (
