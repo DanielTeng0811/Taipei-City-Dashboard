@@ -169,6 +169,8 @@ function next() {
 	width: 100%;
 	min-width: 0;
 	height: 10px;
+	padding: 0 4px;
+	box-sizing: border-box;
 	-webkit-appearance: none;
 	appearance: none;
 	background: linear-gradient(
@@ -178,8 +180,8 @@ function next() {
 		rgba(255, 255, 255, 0.16) var(--timeline-progress),
 		rgba(255, 255, 255, 0.16) 100%
 	);
-	background-size: 100% 2px;
-	background-position: center;
+	background-size: calc(100% - 8px) 2px;
+	background-position: 4px center;
 	background-repeat: no-repeat;
 	border-radius: 999px;
 	outline: none;

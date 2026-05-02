@@ -1,5 +1,7 @@
 --
 -- Waste statistics component seed data
+-- Timeline enabled: year-level (民國100年 ~ 113年)
+-- Series name format: CONCAT(year, '年::', metric) → normalizeTimelineSeries splits on '::'
 --
 
 BEGIN;
@@ -9,17 +11,24 @@ VALUES ('waste_statistics', '一般廢棄物清理情況')
 ON CONFLICT ("index") DO UPDATE
 SET name = EXCLUDED.name;
 
-INSERT INTO public.component_charts ("index", color, types, unit)
+-- Ensure timeline_config column exists (added by dashboardmanager-recycling.sql,
+-- but guard here in case this file is run independently).
+ALTER TABLE public.component_charts
+    ADD COLUMN IF NOT EXISTS timeline_config json;
+
+INSERT INTO public.component_charts ("index", color, types, unit, timeline_config)
 VALUES (
     'waste_statistics',
     ARRAY['#24B0DD', '#56B96D', '#F8CF58'],
     ARRAY['ColumnChart', 'BarPercentChart'],
-    '公克/人日'
+    '公克/人日',
+    '{"enabled": true, "granularity": "year"}'::json
 )
 ON CONFLICT ("index") DO UPDATE
-SET color = EXCLUDED.color,
-    types = EXCLUDED.types,
-    unit = EXCLUDED.unit;
+SET color          = EXCLUDED.color,
+    types          = EXCLUDED.types,
+    unit           = EXCLUDED.unit,
+    timeline_config = EXCLUDED.timeline_config;
 
 DELETE FROM public.query_charts
 WHERE "index" = 'waste_statistics'
@@ -48,6 +57,7 @@ INSERT INTO public.query_charts (
     city
 )
 VALUES
+-- ── 臺北市 ────────────────────────────────────────────────────────────────────
 (
     'waste_statistics',
     NULL,
@@ -55,45 +65,54 @@ VALUES
     NULL,
     'static',
     NULL,
-    0,
-    '',
+    1,
+    'year',
     '環境部資料',
     '一般廢棄物處理統計',
-    '呈現最新年度一般垃圾清運、資源回收與廚餘回收的人均每日處理量。',
-    '可用於觀察臺北市一般廢棄物處理結構，評估垃圾減量與資源回收成效。',
+    '呈現歷年臺北市一般垃圾清運、資源回收與廚餘回收的人均每日處理量（公克/人日）。透過時間軸可逐年比較各類廢棄物處理量的變化趨勢。',
+    '可用於觀察臺北市一般廢棄物處理結構，評估垃圾減量與資源回收成效。滑動時間軸即可切換不同年度。',
     ARRAY['https://data.moenv.gov.tw/dataset/detail/STAT_P_45']::text[],
     ARRAY['doit'],
     NOW(),
     NOW(),
     'three_d',
     $sql$
-WITH latest AS (
-    SELECT MAX(year) AS year
-    FROM public.waste_statistics
-),
-selected AS (
-    SELECT
-        '臺北市' AS x_axis,
-        garbageclearance,
-        garbagerecycled,
-        foodwastesrecycled
-    FROM public.waste_statistics
-    WHERE year = (SELECT year FROM latest)
-      AND county = 'Taipei'
-)
 SELECT x_axis, y_axis, data
 FROM (
-    SELECT x_axis, '一般垃圾清運' AS y_axis, ROUND(garbageclearance)::int AS data, 1 AS sort_order FROM selected
+    SELECT
+        '臺北市'                                                AS x_axis,
+        CONCAT(year::text, '年::一般垃圾清運')                  AS y_axis,
+        ROUND(garbageclearance)::int                            AS data,
+        year                                                    AS year_sort,
+        1                                                       AS sort_order
+    FROM public.waste_statistics WHERE county = 'Taipei'
+
     UNION ALL
-    SELECT x_axis, '資源回收' AS y_axis, ROUND(garbagerecycled)::int AS data, 2 AS sort_order FROM selected
+
+    SELECT
+        '臺北市',
+        CONCAT(year::text, '年::資源回收'),
+        ROUND(garbagerecycled)::int,
+        year,
+        2
+    FROM public.waste_statistics WHERE county = 'Taipei'
+
     UNION ALL
-    SELECT x_axis, '廚餘回收' AS y_axis, ROUND(foodwastesrecycled)::int AS data, 3 AS sort_order FROM selected
-) result
-ORDER BY sort_order
+
+    SELECT
+        '臺北市',
+        CONCAT(year::text, '年::廚餘回收'),
+        ROUND(foodwastesrecycled)::int,
+        year,
+        3
+    FROM public.waste_statistics WHERE county = 'Taipei'
+) t
+ORDER BY year_sort DESC, sort_order
     $sql$,
     NULL,
     'taipei'
 ),
+-- ── 雙北 ──────────────────────────────────────────────────────────────────────
 (
     'waste_statistics',
     NULL,
@@ -101,49 +120,60 @@ ORDER BY sort_order
     NULL,
     'static',
     NULL,
-    0,
-    '',
+    1,
+    'year',
     '環境部資料',
     '一般廢棄物處理統計',
-    '呈現最新年度臺北市、新北市與其他縣市一般垃圾清運、資源回收與廚餘回收的人均每日處理量。',
-    '可用於比較臺北市、新北市與其他縣市一般廢棄物處理結構，評估垃圾減量與資源回收成效。',
+    '呈現歷年臺北市、新北市與其他縣市一般垃圾清運、資源回收與廚餘回收的人均每日處理量（公克/人日）。透過時間軸可逐年比較各縣市廢棄物處理結構的演變。',
+    '可用於比較臺北市、新北市與其他縣市一般廢棄物處理結構，評估垃圾減量與資源回收成效。滑動時間軸即可快速瀏覽歷史趨勢。',
     ARRAY['https://data.moenv.gov.tw/dataset/detail/STAT_P_45']::text[],
     ARRAY['doit'],
     NOW(),
     NOW(),
     'three_d',
     $sql$
-WITH latest AS (
-    SELECT MAX(year) AS year
-    FROM public.waste_statistics
-),
-selected AS (
-    SELECT
-        CASE county
-            WHEN 'Taipei' THEN '臺北市'
-            WHEN 'NewTaipei' THEN '新北市'
-            ELSE '其他縣市'
-        END AS x_axis,
-        CASE county
-            WHEN 'Taipei' THEN 1
-            WHEN 'NewTaipei' THEN 2
-            ELSE 3
-        END AS city_order,
-        garbageclearance,
-        garbagerecycled,
-        foodwastesrecycled
-    FROM public.waste_statistics
-    WHERE year = (SELECT year FROM latest)
-)
 SELECT x_axis, y_axis, data
 FROM (
-    SELECT x_axis, city_order, '一般垃圾清運' AS y_axis, ROUND(garbageclearance)::int AS data, 1 AS sort_order FROM selected
+    SELECT
+        CASE county
+            WHEN 'Taipei'    THEN '臺北市'
+            WHEN 'NewTaipei' THEN '新北市'
+            ELSE '其他縣市'
+        END                                                     AS x_axis,
+        CASE county
+            WHEN 'Taipei'    THEN 1
+            WHEN 'NewTaipei' THEN 2
+            ELSE 3
+        END                                                     AS city_order,
+        CONCAT(year::text, '年::一般垃圾清運')                  AS y_axis,
+        ROUND(garbageclearance)::int                            AS data,
+        year                                                    AS year_sort,
+        1                                                       AS sort_order
+    FROM public.waste_statistics
+
     UNION ALL
-    SELECT x_axis, city_order, '資源回收' AS y_axis, ROUND(garbagerecycled)::int AS data, 2 AS sort_order FROM selected
+
+    SELECT
+        CASE county WHEN 'Taipei' THEN '臺北市' WHEN 'NewTaipei' THEN '新北市' ELSE '其他縣市' END,
+        CASE county WHEN 'Taipei' THEN 1        WHEN 'NewTaipei' THEN 2        ELSE 3          END,
+        CONCAT(year::text, '年::資源回收'),
+        ROUND(garbagerecycled)::int,
+        year,
+        2
+    FROM public.waste_statistics
+
     UNION ALL
-    SELECT x_axis, city_order, '廚餘回收' AS y_axis, ROUND(foodwastesrecycled)::int AS data, 3 AS sort_order FROM selected
-) result
-ORDER BY city_order, sort_order
+
+    SELECT
+        CASE county WHEN 'Taipei' THEN '臺北市' WHEN 'NewTaipei' THEN '新北市' ELSE '其他縣市' END,
+        CASE county WHEN 'Taipei' THEN 1        WHEN 'NewTaipei' THEN 2        ELSE 3          END,
+        CONCAT(year::text, '年::廚餘回收'),
+        ROUND(foodwastesrecycled)::int,
+        year,
+        3
+    FROM public.waste_statistics
+) t
+ORDER BY year_sort DESC, sort_order, city_order
     $sql$,
     NULL,
     'metrotaipei'
