@@ -17,6 +17,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 FETCH_SCRIPT = PROJECT_ROOT / "dataset-analysis" / "scripts" / "build_moenv_air_quality_csv.py"
 ASSET_SCRIPT = PROJECT_ROOT / "dataset-analysis" / "scripts" / "build_air_quality_assets.py"
+AQI_ZONE_SCRIPT = PROJECT_ROOT / "dataset-analysis" / "scripts" / "build_air_quality_aqi_zones.mjs"
 DATA_SQL = PROJECT_ROOT / "db-sample-data" / "dashboard-air-quality.sql"
 
 
@@ -55,6 +56,7 @@ def main() -> int:
 
     run([sys.executable, str(FETCH_SCRIPT), *fetch_args])
     run([sys.executable, str(ASSET_SCRIPT)])
+    run(["node", str(AQI_ZONE_SCRIPT)])
     run(["docker", "cp", str(DATA_SQL), f"{args.data_container}:/tmp/dashboard-air-quality.sql"])
     run([
         "docker",

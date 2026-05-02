@@ -457,6 +457,7 @@ MOENV_API_KEY=你的環境部APIKEY \
 
 - 呼叫 `build_moenv_air_quality_csv.py` 抓取 `AQX_P_432` 並篩出雙北。
 - 呼叫 `build_air_quality_assets.py` 產生正規化 CSV、地圖 GeoJSON 與 `dashboard-air-quality.sql`。
+- 呼叫 `build_air_quality_aqi_zones.mjs` 以測站 AQI 做 IDW 插值，依官方 AQI 級距輸出 `environment_air_quality_aqi_zones.geojson` MultiPolygon 面圖。
 - 將 `dashboard-air-quality.sql` 匯入 Docker 的 `postgres-data` container，預設 DB 為 `dashboard`。
 
 若要用已下載的原始 JSON 測試，不打 API：

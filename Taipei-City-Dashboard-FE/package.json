@@ -19,6 +19,7 @@
 		"@vueuse/core": "^10.7.2",
 		"apexcharts": "^3.45.2",
 		"axios": "^1.6.5",
+		"d3-contour": "^4.0.2",
 		"dayjs": "^1.11.10",
 		"hls.js": "^1.6.7",
 		"lodash.debounce": "^4.0.8",
