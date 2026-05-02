@@ -156,7 +156,6 @@ SELECT pg_catalog.setval('public.groups_id_seq', (SELECT COALESCE(MAX(id), 4) FR
 --
 
 \i /opt/db-sample-data/dashboardmanager-eco-zones.sql
-\i /opt/db-sample-data/dashboardmanager-eco-15min.sql
 \i /opt/db-sample-data/dashboardmanager-senior-service.sql
 \i /opt/db-sample-data/dashboardmanager-eco-restaurant.sql
 \i /opt/db-sample-data/dashboardmanager-medical-garbage.sql
@@ -169,7 +168,6 @@ SELECT pg_catalog.setval('public.groups_id_seq', (SELECT COALESCE(MAX(id), 4) FR
 -- Depends on (run first):
 --   dashboardmanager-demo.sql
 --   dashboardmanager-eco-zones.sql          (eco_zone1=320, eco_zone2=330, eco_zone3=340, eco_zone4=350)
---   dashboardmanager-eco-15min.sql          (eco_living_15min=310)
 --   dashboardmanager-eco-restaurant.sql     (eco_restaurant_taipei=223)
 --   dashboardmanager-clothing-recycle-bins.sql
 --   dashboardmanager-medical-garbage.sql    (garbage_truck)
@@ -208,11 +206,6 @@ WHERE "index" = 'sustainable_env_tpe' AND NOT (340 = ANY(components));
 UPDATE public.dashboards
 SET components = array_append(components, 350)
 WHERE "index" = 'sustainable_env_tpe' AND NOT (350 = ANY(components));
-
--- 15分鐘無痕生活圈 (eco_living_15min, id=310)
-UPDATE public.dashboards
-SET components = array_append(components, 310)
-WHERE "index" = 'sustainable_env_tpe' AND NOT (310 = ANY(components));
 
 -- 臺北市環保餐廳分布 (eco_restaurant_taipei, id=223)
 UPDATE public.dashboards
@@ -264,11 +257,6 @@ WHERE "index" = 'sustainable_env_newtpe' AND NOT (340 = ANY(components));
 UPDATE public.dashboards
 SET components = array_append(components, 350)
 WHERE "index" = 'sustainable_env_newtpe' AND NOT (350 = ANY(components));
-
--- 15分鐘無痕生活圈 (eco_living_15min, id=310)
-UPDATE public.dashboards
-SET components = array_append(components, 310)
-WHERE "index" = 'sustainable_env_newtpe' AND NOT (310 = ANY(components));
 
 -- 臺北市環保餐廳分布 (eco_restaurant_taipei, id=223)
 UPDATE public.dashboards
