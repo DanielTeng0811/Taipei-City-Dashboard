@@ -2959,6 +2959,7 @@ export const useMapStore = defineStore("map", {
 					features: renderedFeatures,
 				},
 			});
+			// Outer glow aura — diffuse halo behind the ring
 			this.map.addLayer({
 				id: "walk-search-circle-points-halo",
 				type: "circle",
@@ -2969,17 +2970,17 @@ export const useMapStore = defineStore("map", {
 						["linear"],
 						["zoom"],
 						12,
-						13,
+						14,
 						16,
 						22,
 					],
-					"circle-color": ["coalesce", ["get", "__searchColor"], "#5a9cf8"],
-					"circle-opacity": 0.4,
-					"circle-blur": 0.5,
-					"circle-stroke-color": "#111111",
-					"circle-stroke-width": 1,
+					"circle-color": ["coalesce", ["get", "__searchColor"], "#39ff88"],
+					"circle-opacity": 0.28,
+					"circle-blur": 0.75,
+					"circle-stroke-width": 0,
 				},
 			});
+			// Neon ring — transparent fill, crisp fluorescent stroke
 			this.map.addLayer({
 				id: "walk-search-circle-points-ring",
 				type: "circle",
@@ -2990,34 +2991,26 @@ export const useMapStore = defineStore("map", {
 						["linear"],
 						["zoom"],
 						12,
-						8,
+						9,
 						16,
-						13,
+						14,
 					],
-					"circle-color": ["coalesce", ["get", "__searchColor"], "#5a9cf8"],
-					"circle-opacity": 0.95,
-					"circle-stroke-color": "#111111",
-					"circle-stroke-width": 3,
+					"circle-color": "#000000",
+					"circle-opacity": 0,
+					"circle-stroke-color": ["coalesce", ["get", "__searchColor"], "#39ff88"],
+					"circle-stroke-width": 2.5,
+					"circle-stroke-opacity": 1,
 				},
 			});
+			// Invisible placeholder — keeps resetSearchCircle cleanup intact
 			this.map.addLayer({
 				id: "walk-search-circle-points",
 				type: "circle",
 				source: "walk-search-circle-points-source",
 				paint: {
-					"circle-radius": [
-						"interpolate",
-						["linear"],
-						["zoom"],
-						12,
-						5,
-						16,
-						9,
-					],
-					"circle-color": ["coalesce", ["get", "__searchColor"], "#5a9cf8"],
-					"circle-opacity": 1,
-					"circle-stroke-color": "#ffffff",
-					"circle-stroke-width": 2,
+					"circle-radius": 0,
+					"circle-opacity": 0,
+					"circle-stroke-width": 0,
 				},
 			});
 			this.isSearchCircleActive = true;
