@@ -13,6 +13,7 @@ import AddViewPoint from "../dialogs/AddViewPoint.vue";
 import MobileLayers from "../dialogs/MobileLayers.vue";
 import IncidentReport from "../dialogs/IncidentReport.vue";
 import FindClosestPoint from "../dialogs/FindClosestPoint.vue";
+import SearchCircleSettings from "../dialogs/SearchCircleSettings.vue";
 import { savedLocations } from "../../assets/configs/mapbox/savedLocations.js";
 
 const authStore = useAuthStore();
@@ -35,6 +36,12 @@ const canUseFindClosestPoint = computed(() => {
 
 	return pointLayerCount === 1;
 });
+
+const canUseSearchCircle = computed(() =>
+	mapStore.currentVisibleLayers.some((layer) =>
+		["circle", "symbol"].includes(layer.split("-")[1]),
+	),
+);
 
 function toggleDistrictLayer() {
 	districtLayer.value = !districtLayer.value;
@@ -62,6 +69,14 @@ function findClosestPointGA() {
 		action_type: "尋找最近點",
 		time: Date.now(),
   	})
+}
+
+function activateSearchCircleClickMode() {
+	dialogStore.showDialog("searchCircleSettings");
+	gtag("event", "map_actions", {
+		action_type: "開啟搜尋圈設定",
+		time: Date.now(),
+	});
 }
 
 watch(
@@ -123,6 +138,20 @@ onMounted(() => {
           近
         </button>
         <button
+          v-if="canUseSearchCircle"
+          :style="{
+            color: mapStore.isSearchCircleClickMode
+              ? 'var(--color-highlight)'
+              : 'var(--color-component-background)',
+          }"
+          class="hide-if-mobile"
+          title="設定搜尋圈"
+          type="button"
+          @click="activateSearchCircleClickMode"
+        >
+          圈
+        </button>
+        <button
           class="show-if-mobile"
           @click="dialogStore.showDialog('mobileLayers')"
         >
@@ -147,6 +176,7 @@ onMounted(() => {
       <MobileLayers :key="contentStore.currentDashboard.index" />
       <IncidentReport />
       <FindClosestPoint />
+      <SearchCircleSettings />
     </div>
 
     <div class="mapcontainer-controls hide-if-mobile">
