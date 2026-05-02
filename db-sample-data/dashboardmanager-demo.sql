@@ -156,6 +156,7 @@ SELECT pg_catalog.setval('public.groups_id_seq', (SELECT COALESCE(MAX(id), 4) FR
 --
 
 \i /opt/db-sample-data/dashboardmanager-eco-zones.sql
+\i /opt/db-sample-data/dashboardmanager-resource-recycling.sql
 \i /opt/db-sample-data/dashboardmanager-senior-service.sql
 \i /opt/db-sample-data/dashboardmanager-eco-restaurant.sql
 \i /opt/db-sample-data/dashboardmanager-garbage-truck.sql
@@ -173,6 +174,7 @@ SELECT pg_catalog.setval('public.groups_id_seq', (SELECT COALESCE(MAX(id), 4) FR
 --   dashboardmanager-eco-restaurant.sql     (eco_restaurant_taipei=223)
 --   dashboardmanager-clothing-recycle-bins.sql
 --   dashboardmanager-garbage-truck.sql      (garbage_truck)
+--   dashboardmanager-resource-recycling.sql (resource_recycling_per_capita=370)
 --
 
 BEGIN;
@@ -199,6 +201,11 @@ UPDATE public.dashboards
 SET components = array_append(components, 330)
 WHERE "index" = 'sustainable_env_tpe' AND NOT (330 = ANY(components));
 
+-- 各縣市人均資源回收量 (resource_recycling_per_capita, id=370)
+UPDATE public.dashboards
+SET components = array_append(components, 370)
+WHERE "index" = 'sustainable_env_tpe' AND NOT (370 = ANY(components));
+
 -- 第三區：綠色消費與餐飲地圖 (eco_zone3, id=340)
 UPDATE public.dashboards
 SET components = array_append(components, 340)
@@ -209,17 +216,12 @@ UPDATE public.dashboards
 SET components = array_append(components, 350)
 WHERE "index" = 'sustainable_env_tpe' AND NOT (350 = ANY(components));
 
--- 15分鐘無痕生活圈 (eco_living_15min, id=310)
-UPDATE public.dashboards
-SET components = array_append(components, 310)
-WHERE "index" = 'sustainable_env_tpe' AND NOT (310 = ANY(components));
-
 -- 空氣品質總覽 (air_quality_overview, id=360)
 UPDATE public.dashboards
 SET components = array_append(components, 360)
 WHERE "index" = 'sustainable_env_tpe' AND NOT (360 = ANY(components));
 
--- 臺北市環保餐廳分布 (eco_restaurant_taipei, id=223)
+-- 環保餐廳分布 (eco_restaurant_taipei, id=223)
 UPDATE public.dashboards
 SET components = array_append(components, 223)
 WHERE "index" = 'sustainable_env_tpe' AND NOT (223 = ANY(components));
@@ -260,6 +262,11 @@ UPDATE public.dashboards
 SET components = array_append(components, 330)
 WHERE "index" = 'sustainable_env_newtpe' AND NOT (330 = ANY(components));
 
+-- 各縣市人均資源回收量 (resource_recycling_per_capita, id=370)
+UPDATE public.dashboards
+SET components = array_append(components, 370)
+WHERE "index" = 'sustainable_env_newtpe' AND NOT (370 = ANY(components));
+
 -- 第三區：綠色消費與餐飲地圖 (eco_zone3, id=340)
 UPDATE public.dashboards
 SET components = array_append(components, 340)
@@ -270,17 +277,12 @@ UPDATE public.dashboards
 SET components = array_append(components, 350)
 WHERE "index" = 'sustainable_env_newtpe' AND NOT (350 = ANY(components));
 
--- 15分鐘無痕生活圈 (eco_living_15min, id=310)
-UPDATE public.dashboards
-SET components = array_append(components, 310)
-WHERE "index" = 'sustainable_env_newtpe' AND NOT (310 = ANY(components));
-
 -- 空氣品質總覽 (air_quality_overview, id=360)
 UPDATE public.dashboards
 SET components = array_append(components, 360)
 WHERE "index" = 'sustainable_env_newtpe' AND NOT (360 = ANY(components));
 
--- 臺北市環保餐廳分布 (eco_restaurant_taipei, id=223)
+-- 環保餐廳分布 (eco_restaurant_taipei, id=223)
 UPDATE public.dashboards
 SET components = array_append(components, 223)
 WHERE "index" = 'sustainable_env_newtpe' AND NOT (223 = ANY(components));
@@ -327,6 +329,8 @@ WHERE d."index" = 'sustainable_env_newtpe'
 ON CONFLICT DO NOTHING;
 
 COMMIT;
+
+\i /opt/db-sample-data/dashboardmanager-waste.sql
 
 -- Completed on 2024-02-16 10:38:44 UTC
 
