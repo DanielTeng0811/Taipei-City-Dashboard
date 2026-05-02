@@ -26,25 +26,12 @@ const districtLayer = ref(false);
 const villageLayer = ref(false);
 
 const canUseFindClosestPoint = computed(() => {
-	let pointLayerCount = 0;
-
-	mapStore.currentVisibleLayers.forEach((layer) => {
-		if (["circle", "symbol"].includes(layer.split("-")[1])) {
-			pointLayerCount++;
-		}
-	});
-
-	return pointLayerCount === 1;
+	return mapStore.getSearchCircleLayerIds(mapStore.currentVisibleLayers).length === 1;
 });
-
-const canUseSearchCircle = computed(() =>
-	mapStore.currentVisibleLayers.some((layer) =>
-		["circle", "symbol"].includes(layer.split("-")[1]),
-	),
-);
 
 function toggleDistrictLayer() {
 	districtLayer.value = !districtLayer.value;
+	mapStore.resetSearchCircle();
 	mapStore.toggleDistrictBoundaries(districtLayer.value);
 	// 載入區界時觸發GA自訂事件
 	gtag('event','map_actions', {
@@ -55,6 +42,7 @@ function toggleDistrictLayer() {
 
 function toggleVillageLayer() {
 	villageLayer.value = !villageLayer.value;
+	mapStore.resetSearchCircle();
 	mapStore.toggleVillageBoundaries(villageLayer.value);
 	// 載入里界時觸發GA自訂事件
 	gtag('event','map_actions', {
@@ -72,6 +60,15 @@ function findClosestPointGA() {
 }
 
 function activateSearchCircleClickMode() {
+	if (mapStore.isSearchCircleEnabled) {
+		mapStore.resetSearchCircle();
+		dialogStore.hideAllDialogs();
+		gtag("event", "map_actions", {
+			action_type: "關閉搜尋圈",
+			time: Date.now(),
+		});
+		return;
+	}
 	dialogStore.showDialog("searchCircleSettings");
 	gtag("event", "map_actions", {
 		action_type: "開啟搜尋圈設定",
@@ -138,9 +135,8 @@ onMounted(() => {
           近
         </button>
         <button
-          v-if="canUseSearchCircle"
           :style="{
-            color: mapStore.isSearchCircleClickMode
+            color: mapStore.isSearchCircleEnabled
               ? 'var(--color-highlight)'
               : 'var(--color-component-background)',
           }"
