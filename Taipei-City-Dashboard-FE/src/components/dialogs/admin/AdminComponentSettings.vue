@@ -578,6 +578,9 @@ function handleClose() {
 				   <option value="restaurant">
                     restaurant (符號圖)
                   </option>
+				  <option value="power">
+                    restaurant (符號圖)
+                  </option>
                 </select>
               </div>
               <label>地圖{{ index + 1 }} Paint屬性</label>
