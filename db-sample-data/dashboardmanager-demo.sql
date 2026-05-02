@@ -160,7 +160,6 @@ SELECT pg_catalog.setval('public.groups_id_seq', (SELECT COALESCE(MAX(id), 4) FR
 \i /opt/db-sample-data/dashboardmanager-eco-restaurant.sql
 \i /opt/db-sample-data/dashboardmanager-medical-garbage.sql
 \i /opt/db-sample-data/dashboardmanager-clothing-recycle-bins.sql
-\i /opt/db-sample-data/dashboardmanager-beach-cleanup-events.sql
 \i /opt/db-sample-data/dashboardmanager-air-quality.sql
 
 -- ─── 永續環境 Dashboard (inlined from dashboardmanager-sustainable-env.sql) ────
