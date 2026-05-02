@@ -114,6 +114,19 @@ BEGIN
     END IF;
 END $$;
 
+-- 全台資源回收量 (resource_recycling_tw, id auto-assigned, timeline enabled)
+DO $$
+DECLARE v_id integer;
+BEGIN
+    SELECT id INTO v_id FROM public.components WHERE "index" = 'resource_recycling_tw';
+    IF v_id IS NOT NULL THEN
+        UPDATE public.dashboards
+        SET components = array_append(components, v_id)
+        WHERE "index" IN ('sustainable_env_tpe', 'sustainable_env_newtpe')
+          AND NOT (v_id = ANY(components));
+    END IF;
+END $$;
+
 -- ─── Assign to City Groups ────────────────────────────────────────────────────
 
 INSERT INTO public.dashboard_groups (dashboard_id, group_id)

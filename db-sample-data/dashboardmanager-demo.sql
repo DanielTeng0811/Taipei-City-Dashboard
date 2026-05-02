@@ -161,6 +161,7 @@ SELECT pg_catalog.setval('public.groups_id_seq', (SELECT COALESCE(MAX(id), 4) FR
 \i /opt/db-sample-data/dashboardmanager-garbage-truck.sql
 \i /opt/db-sample-data/dashboardmanager-clothing-recycle-bins.sql
 \i /opt/db-sample-data/dashboardmanager-air-quality.sql
+\i /opt/db-sample-data/dashboardmanager-recycling.sql
 
 -- ─── 永續環境 Dashboard (inlined from dashboardmanager-sustainable-env.sql) ────
 --
@@ -293,6 +294,19 @@ BEGIN
         UPDATE public.dashboards
         SET components = array_append(components, v_id)
         WHERE "index" = 'sustainable_env_newtpe' AND NOT (v_id = ANY(components));
+    END IF;
+END $$;
+
+-- 全台資源回收量 (resource_recycling_tw, id auto-assigned, timeline enabled)
+DO $$
+DECLARE v_id integer;
+BEGIN
+    SELECT id INTO v_id FROM public.components WHERE "index" = 'resource_recycling_tw';
+    IF v_id IS NOT NULL THEN
+        UPDATE public.dashboards
+        SET components = array_append(components, v_id)
+        WHERE "index" IN ('sustainable_env_tpe', 'sustainable_env_newtpe')
+          AND NOT (v_id = ANY(components));
     END IF;
 END $$;
 
