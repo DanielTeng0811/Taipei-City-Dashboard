@@ -160,7 +160,6 @@ SELECT pg_catalog.setval('public.groups_id_seq', (SELECT COALESCE(MAX(id), 4) FR
 \i /opt/db-sample-data/dashboardmanager-eco-restaurant.sql
 \i /opt/db-sample-data/dashboardmanager-garbage-truck.sql
 \i /opt/db-sample-data/dashboardmanager-clothing-recycle-bins.sql
-\i /opt/db-sample-data/dashboardmanager-beach-cleanup-events.sql
 \i /opt/db-sample-data/dashboardmanager-air-quality.sql
 
 -- ─── 永續環境 Dashboard (inlined from dashboardmanager-sustainable-env.sql) ────
@@ -173,7 +172,6 @@ SELECT pg_catalog.setval('public.groups_id_seq', (SELECT COALESCE(MAX(id), 4) FR
 --   dashboardmanager-eco-restaurant.sql     (eco_restaurant_taipei=223)
 --   dashboardmanager-clothing-recycle-bins.sql
 --   dashboardmanager-garbage-truck.sql      (garbage_truck)
---   dashboardmanager-beach-cleanup-events.sql
 --
 
 BEGIN;
@@ -291,18 +289,6 @@ DO $$
 DECLARE v_id integer;
 BEGIN
     SELECT id INTO v_id FROM public.components WHERE "index" = 'clothing_recycle_bins';
-    IF v_id IS NOT NULL THEN
-        UPDATE public.dashboards
-        SET components = array_append(components, v_id)
-        WHERE "index" = 'sustainable_env_newtpe' AND NOT (v_id = ANY(components));
-    END IF;
-END $$;
-
--- 雙北淨灘活動快訊 (beach_cleanup_events, id auto-assigned)
-DO $$
-DECLARE v_id integer;
-BEGIN
-    SELECT id INTO v_id FROM public.components WHERE "index" = 'beach_cleanup_events';
     IF v_id IS NOT NULL THEN
         UPDATE public.dashboards
         SET components = array_append(components, v_id)

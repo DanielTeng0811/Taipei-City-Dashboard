@@ -28,7 +28,6 @@ import BarChartWithGoal from "./components/BarChartWithGoal.vue";
 import IconPercentChart from "./components/IconPercentChart.vue";
 import IndicatorChart from "./components/IndicatorChart.vue";
 import TextUnitChart from "./components/TextUnitChart.vue";
-import BeachCleanupEventsChart from "./components/BeachCleanupEventsChart.vue";
 import RankingOverviewChart from "./components/RankingOverviewChart.vue";
 
 import MapLegendSvg from "./assets/chart/MapLegend.svg";
@@ -225,8 +224,6 @@ function returnChartComponent(name, svg) {
 		return svg ? IndicatorChartSvg : IndicatorChart;
 	case "TextUnitChart":
 		return svg ? TextUnitChartSvg : TextUnitChart;
-	case "BeachCleanupEventsChart":
-		return svg ? TextUnitChartSvg : BeachCleanupEventsChart;
 	case "RankingOverviewChart":
 		return svg ? RankingOverviewChartSvg : RankingOverviewChart;
 	default:
