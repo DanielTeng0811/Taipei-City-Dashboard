@@ -2,14 +2,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "../..");
 const feRoot = path.join(projectRoot, "Taipei-City-Dashboard-FE");
 const requireFromFe = createRequire(path.join(feRoot, "package.json"));
-const d3ContourPath = requireFromFe.resolve("d3-contour");
-const { contours } = await import(pathToFileURL(d3ContourPath));
 const turf = requireFromFe("@turf/turf");
 
 const defaultStationCsv = path.join(
@@ -185,19 +183,6 @@ function buildScalarField(stations, boundaryFeature, bounds, width) {
 	return { values, width, height, minValue, maxValue };
 }
 
-function convertContourGeometry(geometry, bounds, width, height) {
-	const convertPoint = ([x, y]) => [
-		roundCoord(bounds.minLng + (x / Math.max(1, width - 1)) * (bounds.maxLng - bounds.minLng)),
-		roundCoord(bounds.maxLat - (y / Math.max(1, height - 1)) * (bounds.maxLat - bounds.minLat)),
-	];
-	return {
-		type: "MultiPolygon",
-		coordinates: geometry.coordinates.map((polygon) =>
-			polygon.map((ring) => ring.map(convertPoint))
-		),
-	};
-}
-
 function roundCoord(value) {
 	return Number(value.toFixed(6));
 }
@@ -213,15 +198,6 @@ function clipFeature(feature, boundaryFeature) {
 		return turf.intersect(feature, boundaryFeature);
 	} catch {
 		return null;
-	}
-}
-
-function differenceFeature(feature, removeFeature) {
-	if (!feature || !removeFeature) return feature;
-	try {
-		return turf.difference(feature, removeFeature) || null;
-	} catch {
-		return feature;
 	}
 }
 
@@ -271,62 +247,76 @@ function rgbToHex(channels) {
 	return `#${channels.map((value) => value.toString(16).padStart(2, "0")).join("")}`;
 }
 
+function buildPointGrid(scalarField, bounds) {
+	const features = [];
+	for (let y = 0; y < scalarField.height; y += 1) {
+		const lat =
+			bounds.maxLat -
+			(y / Math.max(1, scalarField.height - 1)) * (bounds.maxLat - bounds.minLat);
+		for (let x = 0; x < scalarField.width; x += 1) {
+			const lng =
+				bounds.minLng +
+				(x / Math.max(1, scalarField.width - 1)) * (bounds.maxLng - bounds.minLng);
+			features.push(
+				turf.point([roundCoord(lng), roundCoord(lat)], {
+					aqi: scalarField.values[y * scalarField.width + x],
+				})
+			);
+		}
+	}
+	return turf.featureCollection(features);
+}
+
 function buildAqiZones(stations, boundaryFeature, bounds, width, simplifyTolerance, bandStep) {
-	const { values, height, minValue, maxValue } = buildScalarField(
+	const scalarField = buildScalarField(
 		stations,
 		boundaryFeature,
 		bounds,
 		width
 	);
 	const bands = buildBands(bandStep).filter(
-		(band) => band.upper > minValue && band.lower <= maxValue
+		(band) => band.upper > scalarField.minValue && band.lower <= scalarField.maxValue
 	);
 	const thresholds = [
 		...new Set(
 			bands
 				.flatMap((band) => [band.lower, band.upper])
-				.filter((threshold) => threshold > 0)
 		),
 	].sort((a, b) => a - b);
-	const contourGenerator = contours().size([width, height]).smooth(true);
-	const aboveByThreshold = new Map();
-	for (const threshold of thresholds) {
-		if (threshold <= minValue) {
-			aboveByThreshold.set(threshold, boundaryFeature);
-		} else if (threshold > maxValue) {
-			aboveByThreshold.set(threshold, null);
-		} else {
-			const geometry = convertContourGeometry(
-				contourGenerator.contour(values, threshold),
-				bounds,
-				width,
-				height
-			);
-			aboveByThreshold.set(threshold, clipFeature(asFeature(geometry), boundaryFeature));
-		}
-	}
+	const bandByRange = new Map(
+		bands.map((band) => [`${band.lower}-${band.upper}`, band])
+	);
+	const breakProperties = thresholds.slice(0, -1).map((lower, index) => {
+		const upper = thresholds[index + 1];
+		const band = bandByRange.get(`${lower}-${upper}`);
+		return band
+			? {
+					level: band.levelIndex + 1,
+					label: band.level.label,
+					min: band.displayMin,
+					max: band.displayMax,
+					level_min: band.level.min,
+					level_max: band.level.max,
+					color: band.color,
+					metric: "AQI",
+					source: "IDW interpolation from MOENV AQX_P_432 stations",
+				}
+			: {};
+	});
+	const isobands = turf.isobands(buildPointGrid(scalarField, bounds), thresholds, {
+		zProperty: "aqi",
+		breaksProperties: breakProperties,
+	});
 
 	const features = [];
-	for (const band of bands) {
-		const lowerFeature =
-			band.lower === 0 ? boundaryFeature : aboveByThreshold.get(band.lower);
-		const upperFeature = aboveByThreshold.get(band.upper);
-		const bandFeature = differenceFeature(lowerFeature, upperFeature);
-		if (!bandFeature) continue;
+	for (const isobandFeature of isobands.features) {
+		if (!isobandFeature.properties?.label) continue;
+		const bandFeature = clipFeature(asFeature(isobandFeature.geometry), boundaryFeature);
+		if (!bandFeature?.geometry) continue;
 		let feature = {
 			type: "Feature",
 			geometry: bandFeature.geometry,
-			properties: {
-				level: band.levelIndex + 1,
-				label: band.level.label,
-				min: band.displayMin,
-				max: band.displayMax,
-				level_min: band.level.min,
-				level_max: band.level.max,
-				color: band.color,
-				metric: "AQI",
-				source: "IDW interpolation from MOENV AQX_P_432 stations",
-			},
+			properties: { ...isobandFeature.properties },
 		};
 		if (simplifyTolerance > 0) {
 			feature = turf.simplify(feature, {
