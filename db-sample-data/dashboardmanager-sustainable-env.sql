@@ -7,6 +7,7 @@
 --   dashboardmanager-eco-restaurant.sql     (eco_restaurant_taipei=223)
 --   dashboardmanager-clothing-recycle-bins.sql
 --   dashboardmanager-garbage-truck.sql      (garbage_truck)
+--   dashboardmanager-resource-recycling.sql (resource_recycling_per_capita=370)
 --   dashboardmanager-waste.sql              (waste_statistics)
 --
 
@@ -33,6 +34,11 @@ WHERE "index" = 'sustainable_env_tpe' AND NOT (320 = ANY(components));
 UPDATE public.dashboards
 SET components = array_append(components, 330)
 WHERE "index" = 'sustainable_env_tpe' AND NOT (330 = ANY(components));
+
+-- 各縣市人均資源回收量 (resource_recycling_per_capita, id=370)
+UPDATE public.dashboards
+SET components = array_append(components, 370)
+WHERE "index" = 'sustainable_env_tpe' AND NOT (370 = ANY(components));
 
 -- 第三區：綠色消費與餐飲地圖 (eco_zone3, id=340)
 UPDATE public.dashboards
@@ -89,6 +95,11 @@ WHERE "index" = 'sustainable_env_newtpe' AND NOT (320 = ANY(components));
 UPDATE public.dashboards
 SET components = array_append(components, 330)
 WHERE "index" = 'sustainable_env_newtpe' AND NOT (330 = ANY(components));
+
+-- 各縣市人均資源回收量 (resource_recycling_per_capita, id=370)
+UPDATE public.dashboards
+SET components = array_append(components, 370)
+WHERE "index" = 'sustainable_env_newtpe' AND NOT (370 = ANY(components));
 
 -- 第三區：綠色消費與餐飲地圖 (eco_zone3, id=340)
 UPDATE public.dashboards

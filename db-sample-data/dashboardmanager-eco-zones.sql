@@ -35,22 +35,22 @@ INSERT INTO public.query_charts (index, history_config, map_config_ids, map_filt
     NULL, 'taipei'
 ),
 (
-    'eco_zone2', NULL, '{201}', '{}', 'static', NULL, 0, '', '環保局資料', '資源回收量(噸)', '臺北市各區清潔隊資源回收量統計。', '檢視回收行動力', ARRAY['#'], ARRAY['doit'], '2024-01-01 00:00:00+00', '2024-01-01 00:00:00+00', 'two_d',
+    'eco_zone2', NULL, '{201}', '{}', 'static', NULL, 0, '', '環保局資料', '資源回收量(噸)', '臺北市各區清潔隊資源回收量統計。', '檢視回收行動力', ARRAY['https://data.moenv.gov.tw/dataset/detail/STAT_P_46', 'https://data.moenv.gov.tw/dataset/detail/STAT_P_45', 'https://data.moenv.gov.tw/dataset/detail/STAT_P_127', 'https://data.moenv.gov.tw/dataset/detail/STAT_P_132'], ARRAY['doit'], '2024-01-01 00:00:00+00', '2024-01-01 00:00:00+00', 'two_d',
     'SELECT district AS x_axis, SUM(amount)::int AS data FROM public.eco_zone2_stats WHERE year=''113'' GROUP BY district ORDER BY data DESC',
     NULL, 'taipei'
 ),
 (
-    'eco_zone2', NULL, '{202}', '{}', 'static', NULL, 0, '', '雙北環保局資料', '資收站數量(個)', '雙北各區黃金資收站與收受點數量統計。', '新北市黃金資收站可將回收物換為生活用品，展現基層回收行動力。', ARRAY['#'], ARRAY['doit', 'ntpc'], '2024-01-01 00:00:00+00', '2024-01-01 00:00:00+00', 'two_d',
+    'eco_zone2', NULL, '{202}', '{}', 'static', NULL, 0, '', '雙北環保局資料', '資收站數量(個)', '雙北各區黃金資收站與收受點數量統計。', '新北市黃金資收站可將回收物換為生活用品，展現基層回收行動力。', ARRAY['https://data.moenv.gov.tw/dataset/detail/STAT_P_46', 'https://data.moenv.gov.tw/dataset/detail/STAT_P_45', 'https://data.moenv.gov.tw/dataset/detail/STAT_P_127', 'https://data.moenv.gov.tw/dataset/detail/STAT_P_132'], ARRAY['doit', 'ntpc'], '2024-01-01 00:00:00+00', '2024-01-01 00:00:00+00', 'two_d',
     'SELECT district AS x_axis, count(*) AS data FROM public.eco_zone2_map GROUP BY district ORDER BY data DESC',
     NULL, 'metrotaipei'
 ),
 (
-    'eco_zone3', NULL, '{203}', '{}', 'static', NULL, 0, '', '環保局資料', '商店與餐廳比例', '臺北市綠色商店與環保餐廳佔比。', '鼓勵綠色消費', ARRAY['#'], ARRAY['doit'], '2024-01-01 00:00:00+00', '2024-01-01 00:00:00+00', 'two_d',
+    'eco_zone3', NULL, '{203}', '{}', 'static', NULL, 0, '', '環保局資料', '商店與餐廳比例', '臺北市綠色商店與環保餐廳佔比。', '鼓勵綠色消費', ARRAY['https://data.moenv.gov.tw/dataset/detail/GP_P_01', 'https://data.moenv.gov.tw/dataset/detail/GIS_P_11', 'https://data.moenv.gov.tw/dataset/detail/GP_P_42'], ARRAY['doit'], '2024-01-01 00:00:00+00', '2024-01-01 00:00:00+00', 'two_d',
     'SELECT category AS x_axis, count(*) AS data FROM public.eco_zone3_map WHERE city=''臺北市'' GROUP BY category',
     NULL, 'taipei'
 ),
 (
-    'eco_zone3', NULL, '{204}', '{}', 'static', NULL, 0, '', '雙北環保局資料', '綠色消費分佈', '雙北各區綠色生活節點分佈。', '鼓勵綠色消費', ARRAY['#'], ARRAY['doit', 'ntpc'], '2024-01-01 00:00:00+00', '2024-01-01 00:00:00+00', 'two_d',
+    'eco_zone3', NULL, '{204}', '{}', 'static', NULL, 0, '', '雙北環保局資料', '綠色消費分佈', '雙北各區綠色生活節點分佈。', '鼓勵綠色消費', ARRAY['https://data.moenv.gov.tw/dataset/detail/GP_P_01', 'https://data.moenv.gov.tw/dataset/detail/GIS_P_11', 'https://data.moenv.gov.tw/dataset/detail/GP_P_42'], ARRAY['doit', 'ntpc'], '2024-01-01 00:00:00+00', '2024-01-01 00:00:00+00', 'two_d',
     'SELECT district AS x_axis, count(*) AS data FROM public.eco_zone3_map WHERE district IS NOT NULL AND length(district)>0 GROUP BY district ORDER BY data DESC',
     NULL, 'metrotaipei'
 ),
