@@ -53,5 +53,6 @@ export type TimelineConfig = {
 	granularity?: "year" | "month" | "auto";
 	field?: string;
 	timeField?: string;
+	nameDelimiter?: string | string[];
 	sort?: "asc" | "desc" | null;
 } | boolean;
