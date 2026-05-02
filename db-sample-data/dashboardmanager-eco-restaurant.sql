@@ -20,7 +20,7 @@ VALUES (223, 'eco_restaurant_taipei', '環保餐廳分布');
 INSERT INTO public.component_charts (index, color, types, unit)
 VALUES (
     'eco_restaurant_taipei',
-    ARRAY['#36C2A0', '#F8CF58', '#5CA8D8'],
+    ARRAY['#36C2A0'],
     ARRAY['DistrictChart', 'ColumnChart'],
     '家'
 );
@@ -35,14 +35,12 @@ VALUES
     'geojson',
     NULL,
     NULL,
-    '{"circle-radius":["interpolate",["linear"],["to-number",["get","action_count"],1],1,4,2,6,3,8,4,10],"circle-color":["match",["get","primary_action"],"環境管理","#36C2A0","惜食(善用食材)","#F8CF58","源頭減量","#5CA8D8","綠色採購","#9AC17C","環境教育","#E170A6","#36C2A0"],"circle-stroke-color":"#ffffff","circle-stroke-width":1.3,"circle-opacity":0.88}',
+    '{"circle-radius":5,"circle-color":"#36C2A0","circle-stroke-color":"#ffffff","circle-stroke-width":1.3,"circle-opacity":0.88}',
     '[
         {"key":"name","name":"餐廳名稱"},
         {"key":"district","name":"行政區"},
         {"key":"address","name":"地址"},
-        {"key":"phone","name":"電話"},
-        {"key":"eco_actions","name":"環保作為"},
-        {"key":"action_count","name":"環保作為數"}
+        {"key":"phone","name":"電話"}
     ]'
 ),
 (
@@ -53,15 +51,13 @@ VALUES
     'geojson',
     NULL,
     NULL,
-    '{"circle-radius":["interpolate",["linear"],["to-number",["get","action_count"],1],1,4,2,6,3,8,4,10],"circle-color":["match",["get","primary_action"],"環境管理","#36C2A0","惜食(善用食材)","#F8CF58","源頭減量","#5CA8D8","綠色採購","#9AC17C","環境教育","#E170A6","環保餐廳","#36C2A0","#36C2A0"],"circle-stroke-color":"#ffffff","circle-stroke-width":1.3,"circle-opacity":0.88}',
+    '{"circle-radius":5,"circle-color":"#36C2A0","circle-stroke-color":"#ffffff","circle-stroke-width":1.3,"circle-opacity":0.88}',
     '[
         {"key":"city","name":"城市"},
         {"key":"name","name":"餐廳名稱"},
         {"key":"district","name":"行政區"},
         {"key":"address","name":"地址"},
-        {"key":"phone","name":"電話"},
-        {"key":"eco_actions","name":"環保作為"},
-        {"key":"action_count","name":"環保作為數"}
+        {"key":"phone","name":"電話"}
     ]'
 );
 
@@ -96,11 +92,11 @@ INSERT INTO public.query_charts (
     NULL,
     0,
     '',
-    '臺北市政府資料',
+    '臺北市環保局資料',
     '顯示臺北市環保餐廳分布',
-    '彙整臺北市環保餐廳資料，依行政區呈現餐廳數量，並以地圖點位顯示餐廳位置與環保作為。',
+    '彙整臺北市環保餐廳資料，依行政區呈現餐廳數量，並以地圖點位顯示餐廳位置。',
     '可用於觀察各行政區綠色飲食資源分布，支援永續消費、環境教育與商圈推廣分析。',
-    ARRAY['臺北市環保餐廳.csv'],
+    ARRAY['eco_restaurant_taipei.csv'],
     ARRAY['doit'],
     '2026-04-25 00:00:00+00',
     '2026-04-25 00:00:00+00',
@@ -118,11 +114,11 @@ INSERT INTO public.query_charts (
     NULL,
     0,
     '',
-    '臺北市政府、新北市政府資料',
+    '臺北市環保局、新北市環保局資料',
     '顯示雙北環保餐廳分布',
     '彙整臺北市與新北市環保餐廳資料，依行政區呈現餐廳數量，並以地圖點位顯示餐廳位置。',
     '可用於觀察雙北各行政區綠色飲食資源分布，支援永續消費、環境教育與商圈推廣分析。',
-    ARRAY['臺北市環保餐廳.csv', 'eco_restaurant.csv'],
+    ARRAY['eco_restaurant_taipei.csv', 'eco_restaurant.csv'],
     ARRAY['doit', 'ntpc'],
     '2026-04-25 00:00:00+00',
     '2026-04-25 00:00:00+00',
