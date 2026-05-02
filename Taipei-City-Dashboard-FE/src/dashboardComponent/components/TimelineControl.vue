@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, onMounted, nextTick } from "vue";
 
 const props = defineProps({
 	times: { type: Array, default: () => [] },
@@ -12,11 +12,22 @@ const emit = defineEmits(["update:modelValue"]);
 const total = computed(() => props.times.length);
 const periodLabel = computed(() => props.granularity === "year" ? "年度" : "月份");
 
-// ── Local slider state ─────────────────────────────────────────────────────────
-// Slider pos: 0 = leftmost (oldest), total-1 = rightmost (newest).
-// times[0] is the most recent, so pos = total - 1 - timesIndex.
+// ── Imperative slider design ───────────────────────────────────────────────────
+// Root cause of all previous snap-back bugs:
+//   Any `:value` binding on <input type="range"> lets Vue overwrite el.value
+//   during reactive re-renders, fighting the browser's native drag position.
+//
+// Fix: remove `:value` entirely. Use a template ref to set el.value and el.max
+//   ONLY when triggered by external prop changes (not during drag). During drag
+//   the browser owns the thumb position — we never touch el.value.
+//
+// displayPos drives the label and progress bar only (both are safe reactive
+//   bindings that don't affect the input value).
+
+const sliderEl = ref(null);
 const isDragging = ref(false);
-const localPos = ref(0);
+const displayPos = ref(0);   // feeds label + progress bar
+let emitTimer = null;
 
 function posFromModelValue(mv) {
 	const idx = props.times.indexOf(mv);
@@ -24,26 +35,42 @@ function posFromModelValue(mv) {
 	return Math.max(0, total.value - 1 - safeIdx);
 }
 
-// Sync from parent only when the user is NOT actively dragging.
-watch(
-	[() => props.modelValue, total],
-	() => {
-		if (!isDragging.value) {
-			localPos.value = posFromModelValue(props.modelValue);
-		}
-	},
-	{ immediate: true },
-);
+// Imperatively set the slider's value and max via direct DOM access.
+// Called only when NOT dragging so the browser's native position is never reset.
+function syncSlider(pos) {
+	const el = sliderEl.value;
+	if (!el) return;
+	el.max = String(Math.max(0, total.value - 1));
+	el.value = String(pos);
+}
 
-// Label shown while dragging reflects local position immediately.
+// Initialize once the DOM is available.
+onMounted(() => {
+	const pos = posFromModelValue(props.modelValue);
+	displayPos.value = pos;
+	syncSlider(pos);
+});
+
+// Sync from parent when modelValue or total changes, but never during drag.
+// Always update max (total may change); only update el.value when not dragging.
+watch([() => props.modelValue, total], () => {
+	const el = sliderEl.value;
+	if (el) el.max = String(Math.max(0, total.value - 1));
+	if (!isDragging.value) {
+		const pos = posFromModelValue(props.modelValue);
+		displayPos.value = pos;
+		nextTick(() => syncSlider(pos));
+	}
+});
+
 const currentLabel = computed(() => {
-	const idx = Math.max(0, Math.min(total.value - 1, total.value - 1 - localPos.value));
+	const idx = Math.max(0, Math.min(total.value - 1, total.value - 1 - displayPos.value));
 	return props.times[idx] || props.modelValue || "";
 });
 
 const progressPercent = computed(() => {
 	if (total.value <= 1) return "100%";
-	return `${(localPos.value / (total.value - 1)) * 100}%`;
+	return `${(displayPos.value / (total.value - 1)) * 100}%`;
 });
 
 // ── Event handlers ─────────────────────────────────────────────────────────────
@@ -58,30 +85,37 @@ function onDragStart() {
 
 function onInput(event) {
 	const pos = Number(event.target.value);
-	localPos.value = pos;
-	emitFromPos(pos);
+	displayPos.value = pos;
+	// Debounce: rapid dragging across many steps shouldn't trigger expensive
+	// data-filter recomputations on every pixel.
+	clearTimeout(emitTimer);
+	emitTimer = setTimeout(() => emitFromPos(pos), 80);
 }
 
 function onDragEnd(event) {
+	clearTimeout(emitTimer);
 	const pos = Number(event.target.value);
-	localPos.value = pos;
+	displayPos.value = pos;
 	emitFromPos(pos);
-	// Release lock after a tick so the parent update doesn't clobber localPos.
+	// Release lock after one tick so the parent's prop update from emitFromPos
+	// doesn't re-enter the watch before isDragging is cleared.
 	setTimeout(() => { isDragging.value = false; }, 0);
 }
 
 function prev() {
-	// Move left → older period
-	if (localPos.value > 0) {
-		localPos.value--;
-		emitFromPos(localPos.value);
+	if (displayPos.value > 0) {
+		const pos = displayPos.value - 1;
+		displayPos.value = pos;
+		if (sliderEl.value) sliderEl.value.value = String(pos);
+		emitFromPos(pos);
 	}
 }
 function next() {
-	// Move right → newer period
-	if (localPos.value < total.value - 1) {
-		localPos.value++;
-		emitFromPos(localPos.value);
+	if (displayPos.value < total.value - 1) {
+		const pos = displayPos.value + 1;
+		displayPos.value = pos;
+		if (sliderEl.value) sliderEl.value.value = String(pos);
+		emitFromPos(pos);
 	}
 }
 </script>
@@ -90,31 +124,34 @@ function next() {
   <div class="timeline-control">
     <button
       class="timeline-control-btn"
-      :disabled="localPos <= 0"
+      :disabled="displayPos <= 0"
       title="上一期"
       @click="prev"
     >
       <span>chevron_left</span>
     </button>
 
-    <label class="timeline-control-main">
+    <label
+      class="timeline-control-main"
+      :class="granularity === 'year' ? 'is-year' : 'is-month'"
+    >
       <span class="timeline-label">
         <span>{{ periodLabel }}</span>
         <strong>{{ currentLabel }}</strong>
       </span>
 
+      <!-- No :value binding — Vue never touches el.value, eliminating snap-back. -->
       <input
-        :value="localPos"
+        ref="sliderEl"
         type="range"
         min="0"
-        :max="total - 1"
         class="timeline-slider"
         :style="{ '--timeline-progress': progressPercent }"
         :title="currentLabel"
         :disabled="total <= 1"
         aria-label="選擇時間"
         @mousedown="onDragStart"
-        @touchstart="onDragStart"
+        @touchstart.passive="onDragStart"
         @input="onInput"
         @mouseup="onDragEnd"
         @touchend="onDragEnd"
@@ -123,7 +160,7 @@ function next() {
 
     <button
       class="timeline-control-btn"
-      :disabled="localPos >= total - 1"
+      :disabled="displayPos >= total - 1"
       title="下一期"
       @click="next"
     >
@@ -182,7 +219,7 @@ function next() {
 
 	&-main {
 		display: grid;
-		grid-template-columns: auto minmax(34px, 1fr);
+		grid-template-columns: 3.9rem minmax(34px, 1fr);
 		align-items: center;
 		gap: 7px;
 		min-width: 0;
@@ -215,6 +252,9 @@ function next() {
 		font-weight: 700;
 		line-height: 1;
 		white-space: nowrap;
+		font-variant-numeric: tabular-nums;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 }
 
@@ -287,7 +327,7 @@ function next() {
 @media (max-width: 520px) {
 	.timeline-control {
 		&-main {
-			grid-template-columns: auto minmax(48px, 1fr);
+			grid-template-columns: 3.9rem minmax(48px, 1fr);
 			gap: 5px;
 		}
 	}

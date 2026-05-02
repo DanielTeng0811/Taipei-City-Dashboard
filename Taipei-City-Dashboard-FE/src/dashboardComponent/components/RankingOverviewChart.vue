@@ -439,7 +439,7 @@ function clearSelection() {
 
 	&-row {
 		display: grid;
-		grid-template-columns: 3.2rem minmax(2.5rem, 1fr) 2rem 4.2rem;
+		grid-template-columns: 3.2rem minmax(2.5rem, 1fr) auto 2.6rem;
 		gap: 0.38rem;
 		align-items: center;
 		width: 100%;
@@ -477,6 +477,8 @@ function clearSelection() {
 			color: var(--color-complement-text);
 			font-size: 0.78rem;
 			text-align: right;
+			overflow: hidden;
+			text-overflow: ellipsis;
 		}
 	}
 }
